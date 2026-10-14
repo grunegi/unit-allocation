@@ -1,6 +1,6 @@
 "use client";
 
-import Qrscanner from "../components/Qrscanner";
+import UnitStatusScanner from "./UnitStatusScanner";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -205,61 +205,61 @@ export default function UnitAllocationApp({ initialData }) {
   }
 
   async function exportCSV() {
-  const result = await getAssignmentsHistory();
+    const result = await getAssignmentsHistory();
 
-  if (!result.ok) {
-    notify("❌ خطا در دریافت تاریخچه: " + result.error);
-    return;
+    if (!result.ok) {
+      notify("❌ خطا در دریافت تاریخچه: " + result.error);
+      return;
+    }
+
+    if (!result.data.length) {
+      notify("❌ تاریخچه خالیه.");
+      return;
+    }
+
+    try {
+      // dynamic import — فقط وقتی لازم شد لود می‌شه
+      const XLSX = await import("xlsx");
+
+      const rows = result.data.map((h, i) => ({
+        ردیف: i + 1,
+        تاریخ: new Date(h.assigned_at).toLocaleString("fa-IR"),
+        عملیات: h.action || "",
+        "کد واحد": h.unit_code || "",
+        ساختمان: h.building || "",
+        "شماره واحد": h.unit_number ?? "",
+        "نام و نام خانوادگی": h.person_name || "",
+        "کد ملی": h.person_national_id || "",
+        "شماره تماس": h.person_phone || "",
+        آدرس: h.person_address || "",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه");
+
+      // تنظیم عرض ستون‌ها
+      worksheet["!cols"] = [
+        { wch: 6 }, // ردیف
+        { wch: 20 }, // تاریخ
+        { wch: 25 }, // عملیات
+        { wch: 12 }, // کد واحد
+        { wch: 10 }, // ساختمان
+        { wch: 10 }, // شماره واحد
+        { wch: 25 }, // نام
+        { wch: 12 }, // کد ملی
+        { wch: 15 }, // شماره تماس
+        { wch: 40 }, // آدرس
+      ];
+
+      XLSX.writeFile(workbook, `assignments-history-${Date.now()}.xlsx`);
+
+      notify(`✅ ${result.data.length} رکورد در فایل اکسل ذخیره شد.`);
+    } catch (error) {
+      console.error("Excel export failed:", error);
+      notify("❌ خطا در ساخت فایل اکسل: " + error.message);
+    }
   }
-
-  if (!result.data.length) {
-    notify("❌ تاریخچه خالیه.");
-    return;
-  }
-
-  try {
-    // dynamic import — فقط وقتی لازم شد لود می‌شه
-    const XLSX = await import("xlsx");
-
-    const rows = result.data.map((h, i) => ({
-      "ردیف": i + 1,
-      "تاریخ": new Date(h.assigned_at).toLocaleString("fa-IR"),
-      "عملیات": h.action || "",
-      "کد واحد": h.unit_code || "",
-      "ساختمان": h.building || "",
-      "شماره واحد": h.unit_number ?? "",
-      "نام و نام خانوادگی": h.person_name || "",
-      "کد ملی": h.person_national_id || "",
-      "شماره تماس": h.person_phone || "",
-      "آدرس": h.person_address || "",
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه");
-
-    // تنظیم عرض ستون‌ها
-    worksheet["!cols"] = [
-      { wch: 6 },   // ردیف
-      { wch: 20 },  // تاریخ
-      { wch: 25 },  // عملیات
-      { wch: 12 },  // کد واحد
-      { wch: 10 },  // ساختمان
-      { wch: 10 },  // شماره واحد
-      { wch: 25 },  // نام
-      { wch: 12 },  // کد ملی
-      { wch: 15 },  // شماره تماس
-      { wch: 40 },  // آدرس
-    ];
-
-    XLSX.writeFile(workbook, `assignments-history-${Date.now()}.xlsx`);
-
-    notify(`✅ ${result.data.length} رکورد در فایل اکسل ذخیره شد.`);
-  } catch (error) {
-    console.error("Excel export failed:", error);
-    notify("❌ خطا در ساخت فایل اکسل: " + error.message);
-  }
-}
 
   function downloadSampleCSV() {
     const csv =
@@ -290,13 +290,6 @@ export default function UnitAllocationApp({ initialData }) {
     a.download = "backup.json";
     a.click();
     URL.revokeObjectURL(url);
-  }
-
-  function handleScan(code) {
-    setUnitCode(code);
-    notify(`کد اسکن‌شده: ${code}`);
-    // اگه می‌خوای بعد از اسکن مستقیم بره تب ثبت:
-    // setTab("select");
   }
 
   async function generateQRCodes() {
@@ -704,17 +697,39 @@ export default function UnitAllocationApp({ initialData }) {
         <section className="card">
           <h2>📷 اسکن کد واحد</h2>
           <p>دوربین را به سمت QR code بگیرید.</p>
-          <Qrscanner onScan={handleScan} onError={notify} />
+          <UnitStatusScanner assignments={assignments} />
         </section>
       )}
 
       {tab === "print" && (
         <section className="card">
           <h2>🖨 ساخت و چاپ QR کد واحدها</h2>
+
+          {/* هشدار مهم */}
+          <div className="warning-box">
+            <strong>⚠️ توجه مهم</strong>
+            <p>
+              محتوای هر QR کد <strong>ثابت</strong> است و به کد واحد مربوط
+              می‌شود (مثلاً <code>A1-15</code>).
+            </p>
+            <p>
+              QR ها هر بار <strong>عیناً یکسان</strong> ساخته می‌شوند. بنابراین:
+            </p>
+            <ul>
+              <li>
+                ✅ کافی است <strong>فقط یک بار</strong> چاپ کنید و به واحدها
+                بزنید.
+              </li>
+              <li>❌ ساخت دوباره نیاز به چاپ و جایگزینی فیزیکی ندارد.</li>
+              <li>💡 QR های چاپ‌شده و QR های جدید، با هم سازگارند.</li>
+            </ul>
+          </div>
+
           <p>
             با زدن دکمه ساخت، برای هر واحد یک QR کد ساخته می‌شود. محتوای هر QR
             کد، کد همان واحد است؛ مثلاً <strong>A1-15</strong>.
           </p>
+
           <div className="actions qr-actions">
             <button onClick={generateQRCodes} disabled={isGeneratingQR}>
               {isGeneratingQR
@@ -729,14 +744,17 @@ export default function UnitAllocationApp({ initialData }) {
               چاپ QR کدها
             </button>
           </div>
+
           {isGeneratingQR && (
             <p className="stats" role="status">
               ساخت {qrProgress} از {ALL_UNITS.length} کد...
             </p>
           )}
+
           {!isGeneratingQR && qrCodes.length > 0 && (
             <p className="stats">{qrCodes.length} کد QR آماده چاپ است.</p>
           )}
+
           <div className="barcode-grid">
             {qrCodes.map(({ code, src }) => (
               <div className="barcode-item" key={code}>
@@ -759,10 +777,6 @@ export default function UnitAllocationApp({ initialData }) {
             <button onClick={exportJSON}>📤 خروجی JSON</button>
             <button onClick={exportCSV}>📄 خروجی به صورت Excel</button>
           </div>
-          <p className="warning">
-            ورود فایل JSON در این نسخه غیرفعال است تا داده‌های دیتابیس بدون
-            اعتبارسنجی بازنویسی نشوند.
-          </p>
           <button
             className="danger"
             disabled={busy}

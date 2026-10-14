@@ -581,3 +581,25 @@ export async function getAssignmentsHistory() {
     return { ok: false, error: error.message, data: [] };
   }
 }
+
+
+
+/**
+ * فقط کد واحدهای تخصیص‌یافته رو برمی‌گردونه (بدون اطلاعات شخص).
+ * برای صفحه‌ی اسکن عمومی که نباید اطلاعات لو بره.
+ */
+export async function getTakenUnitsOnly() {
+  try {
+    const supabase = createServerSupabase();
+    const { data, error } = await supabase
+      .from("units")
+      .select("code")
+      .not("person_id", "is", null);
+
+    if (error) throw error;
+
+    return { ok: true, codes: (data || []).map((u) => u.code) };
+  } catch (error) {
+    return { ok: false, error: error.message, codes: [] };
+  }
+}

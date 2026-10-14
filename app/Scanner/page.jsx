@@ -1,23 +1,28 @@
-"use client";
+import UnitStatusScanner from "../components/UnitStatusScanner";
+import { getTakenUnitsOnly } from "../Js/actions";
 
-import { useState } from "react";
-import Qrscanner from "../components/Qrscanner";
+export const dynamic = "force-dynamic";
 
-export default function ScanPage() {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
+export default async function ScannerPage() {
+  const result = await getTakenUnitsOnly();
+
+  // تبدیل به آبجکت: { "A1-1": true, "A1-5": true, ... }
+  const takenUnits = {};
+  if (result.ok) {
+    for (const code of result.codes) {
+      takenUnits[code] = true;
+    }
+  }
 
   return (
     <main className="container">
-      <section className="card">
+      <header className="card">
         <h1>📷 اسکن واحد</h1>
-        <Qrscanner autoStart onScan={setCode} onError={setError} />
-        {code && (
-          <p>
-            کد: <strong>{code}</strong>
-          </p>
-        )}
-        {error && <p role="alert">{error}</p>}
+        <p>دوربین را به سمت QR کد واحد بگیرید.</p>
+      </header>
+
+      <section className="card">
+        <UnitStatusScanner assignments={takenUnits} />
       </section>
     </main>
   );
