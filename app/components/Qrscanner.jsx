@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function QrScanner({
+export default function Qrscanner({
   onScan,
   onError,
   autoStart = false,
