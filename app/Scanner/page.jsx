@@ -11,7 +11,7 @@ export default function ScanPage() {
     <main className="container">
       <section className="card">
         <h1>📷 اسکن واحد</h1>
-        <QrScanner autoStart onScan={setCode} onError={setError} />
+        <Qrscanner autoStart onScan={setCode} onError={setError} />
         {code && (
           <p>
             کد: <strong>{code}</strong>
