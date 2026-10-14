@@ -11,6 +11,7 @@ import {
   importPeopleAction,
   releaseUnitAction,
   resetAllAction,
+  getAssignmentsHistory,
 } from "../Js/actions";
 
 const BUILDINGS = { A1: 40, A2: 40, A3: 40, C1: 40, C2: 40, C3: 40, B1: 22 };
@@ -189,12 +190,6 @@ export default function UnitAllocationApp({ initialData }) {
     runAction(() => assignUnitAction(personId, unitCode));
   }
 
-  function importPeople() {
-    const text = window.prompt("اسامی را هر خط یکی وارد کنید:");
-    if (!text) return;
-    runAction(() => importPeopleAction(text.split("\n")));
-  }
-
   function removePerson(person) {
     if (
       !window.confirm(
@@ -209,35 +204,62 @@ export default function UnitAllocationApp({ initialData }) {
     });
   }
 
-  function exportCSV() {
-    const rows = [
-      ["ردیف", "نام", "واحد انتخاب‌شده"],
-      ...people.map((person, index) => [
-        String(index + 1),
-        person.name,
-        Object.entries(assignments).find(
-          ([, a]) => a.personId === person.id,
-        )?.[0] || "",
-      ]),
-    ];
-    const csv =
-      "\uFEFF" +
-      rows
-        .map((row) =>
-          row
-            .map((cell) => `"${String(cell).replaceAll('"', '""')}"`)
-            .join(","),
-        )
-        .join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "selections.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  async function exportCSV() {
+  const result = await getAssignmentsHistory();
+
+  if (!result.ok) {
+    notify("❌ خطا در دریافت تاریخچه: " + result.error);
+    return;
   }
+
+  if (!result.data.length) {
+    notify("❌ تاریخچه خالیه.");
+    return;
+  }
+
+  try {
+    // dynamic import — فقط وقتی لازم شد لود می‌شه
+    const XLSX = await import("xlsx");
+
+    const rows = result.data.map((h, i) => ({
+      "ردیف": i + 1,
+      "تاریخ": new Date(h.assigned_at).toLocaleString("fa-IR"),
+      "عملیات": h.action || "",
+      "کد واحد": h.unit_code || "",
+      "ساختمان": h.building || "",
+      "شماره واحد": h.unit_number ?? "",
+      "نام و نام خانوادگی": h.person_name || "",
+      "کد ملی": h.person_national_id || "",
+      "شماره تماس": h.person_phone || "",
+      "آدرس": h.person_address || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه");
+
+    // تنظیم عرض ستون‌ها
+    worksheet["!cols"] = [
+      { wch: 6 },   // ردیف
+      { wch: 20 },  // تاریخ
+      { wch: 25 },  // عملیات
+      { wch: 12 },  // کد واحد
+      { wch: 10 },  // ساختمان
+      { wch: 10 },  // شماره واحد
+      { wch: 25 },  // نام
+      { wch: 12 },  // کد ملی
+      { wch: 15 },  // شماره تماس
+      { wch: 40 },  // آدرس
+    ];
+
+    XLSX.writeFile(workbook, `assignments-history-${Date.now()}.xlsx`);
+
+    notify(`✅ ${result.data.length} رکورد در فایل اکسل ذخیره شد.`);
+  } catch (error) {
+    console.error("Excel export failed:", error);
+    notify("❌ خطا در ساخت فایل اکسل: " + error.message);
+  }
+}
 
   function downloadSampleCSV() {
     const csv =
@@ -735,7 +757,7 @@ export default function UnitAllocationApp({ initialData }) {
           <h2>💾 پشتیبان‌گیری</h2>
           <div className="actions">
             <button onClick={exportJSON}>📤 خروجی JSON</button>
-            <button onClick={exportCSV}>📄 خروجی CSV</button>
+            <button onClick={exportCSV}>📄 خروجی به صورت Excel</button>
           </div>
           <p className="warning">
             ورود فایل JSON در این نسخه غیرفعال است تا داده‌های دیتابیس بدون
