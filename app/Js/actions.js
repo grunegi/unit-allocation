@@ -110,7 +110,6 @@ export async function getInitialData() {
  * افزودن یک فرد جدید — قبل از درج، تکراری بودن کد ملی (یا نام) را چک می‌کند.
  */
 export async function addPersonAction(formData) {
-  // ۱. استخراج و پاکسازی ورودی‌ها
   const name = String(formData.get("name") || "").trim();
   const phone = String(formData.get("phone") || "").trim() || null;
   const nationalId = String(formData.get("national_id") || "").trim() || null;
@@ -138,7 +137,7 @@ export async function addPersonAction(formData) {
   try {
     const supabase = createServerSupabase();
 
-    // ۲. چک تکراری — اول کد ملی، اگه نبود اسم
+    // چک تکراری — اول کد ملی، اگه نبود اسم
     if (nationalId) {
       const { data: existingId, error: idCheckError } = await supabase
         .from("people")
@@ -169,7 +168,6 @@ export async function addPersonAction(formData) {
       }
     }
 
-    // ۳. درج فرد جدید
     const { error } = await supabase.from("people").insert({
       name,
       phone,
@@ -191,7 +189,6 @@ export async function addPersonAction(formData) {
   }
 }
 
-
 /**
  * ورود گروهی افراد — تکراری‌های داخل لیست و تکراری‌های موجود در دیتابیس را رد می‌کند.
  */
@@ -204,12 +201,10 @@ export async function importPeopleAction(rows) {
     return { ok: false, error: "داده‌ای برای ثبت وجود ندارد." };
   }
 
-  // ۱. اعتبارسنجی هر ردیف
   const parsed = [];
   const errors = [];
 
   rows.forEach((row, index) => {
-    // پشتیبانی از string و array
     const cells = Array.isArray(row)
       ? row
       : String(row).split(",").map((c) => c.trim());
@@ -258,7 +253,6 @@ export async function importPeopleAction(rows) {
   try {
     const supabase = createServerSupabase();
 
-    // ۲. حذف تکراری داخل لیست
     const seenNationalIds = new Set();
     const uniqueInList = [];
     for (const p of parsed) {
@@ -267,7 +261,6 @@ export async function importPeopleAction(rows) {
       uniqueInList.push(p);
     }
 
-    // ۳. حذف تکراری با دیتابیس
     const nationalIds = uniqueInList.map((p) => p.national_id);
     const { data: existing, error: checkError } = await supabase
       .from("people")
@@ -286,7 +279,6 @@ export async function importPeopleAction(rows) {
       };
     }
 
-    // ۴. درج گروهی
     const { error } = await supabase.from("people").insert(toInsert);
 
     if (error) {
@@ -308,7 +300,7 @@ export async function importPeopleAction(rows) {
 }
 
 /**
- * حذف یک فرد — به دلیل ON DELETE SET NULL روی units.person_id، واحد او خودکار آزاد می‌شود.
+ * حذف یک فرد — به دلیل ON DELETE SET NULL روی units.person_id، واحدهای او خودکار آزاد می‌شوند.
  */
 export async function deletePersonAction(personId) {
   if (!personId) {
@@ -337,10 +329,10 @@ export async function deletePersonAction(personId) {
 // ============================================================
 
 /**
- * تخصیص یک واحد به یک فرد.
+ * تخصیص یک واحد به یک فرد (می‌تواند چند واحد داشته باشد).
  * - اعتبارسنجی کد واحد
  * - بررسی وجود فرد و واحد
- * - بررسی آزاد بودن واحد و نداشتن واحد قبلی توسط فرد
+ * - بررسی آزاد بودن واحد
  * - آپدیت شرطی + تأیید نهایی (مقابله با race condition)
  * - ثبت در تاریخچه
  */
@@ -392,22 +384,7 @@ export async function assignUnitAction(personId, rawCode) {
       return { ok: false, error: "این واحد قبلاً تخصیص داده شده است." };
     }
 
-    // ۴. بررسی اینکه فرد قبلاً واحدی نگرفته باشد
-    const { data: alreadyAssigned, error: assignedError } = await supabase
-      .from("units")
-      .select("code")
-      .eq("person_id", personId)
-      .maybeSingle();
-
-    if (assignedError) throw assignedError;
-    if (alreadyAssigned) {
-      return {
-        ok: false,
-        error: `این فرد قبلاً واحد ${alreadyAssigned.code} را انتخاب کرده است.`,
-      };
-    }
-
-    // ۵. آپدیت شرطی — فقط اگر واحد هنوز آزاد باشد
+    // ۴. آپدیت شرطی — فقط اگر واحد هنوز آزاد باشد
     const { error: updateError } = await supabase
       .from("units")
       .update({
@@ -421,14 +398,13 @@ export async function assignUnitAction(personId, rawCode) {
       if (updateError.code === "23505") {
         return {
           ok: false,
-          error:
-            "این فرد یا واحد هم‌زمان به تخصیص دیگری رسیده است؛ اطلاعات را تازه کنید.",
+          error: "این واحد هم‌زمان گرفته شد؛ صفحه را تازه کنید.",
         };
       }
       throw updateError;
     }
 
-    // ۶. تأیید نهایی — اگر درخواست دیگری برنده شده باشد، ۰ ردیف آپدیت می‌شود
+    // ۵. تأیید نهایی — اگر درخواست دیگری برنده شده باشد، ۰ ردیف آپدیت می‌شود
     const { data: verify, error: verifyError } = await supabase
       .from("units")
       .select("person_id")
@@ -443,9 +419,9 @@ export async function assignUnitAction(personId, rawCode) {
       };
     }
 
-    // ۷. ثبت در تاریخچه (فقط یک بار)
+    // ۶. ثبت در تاریخچه
     await logAssignmentHistory(supabase, {
-      action: "ثبت کاربر و تخصیص واحد",
+      action: "تخصیص واحد",
       unitCode: code,
       building: unit.building,
       unitNumber: unit.number,
@@ -466,7 +442,7 @@ export async function assignUnitAction(personId, rawCode) {
 }
 
 /**
- * آزادسازی واحد فرد — person_id را NULL می‌کند و در تاریخچه ثبت می‌کند.
+ * آزادسازی تمام واحدهای یک فرد — person_id را NULL می‌کند و برای هر واحد در تاریخچه ثبت می‌کند.
  */
 export async function releaseUnitAction(personId) {
   if (!personId) {
@@ -485,16 +461,15 @@ export async function releaseUnitAction(personId) {
 
     if (personError) throw personError;
 
-    // ۲. اطلاعات واحد فعلی فرد (قبل از آزادسازی)
-    const { data: unit, error: unitError } = await supabase
+    // ۲. همه‌ی واحدهای فعلی فرد (قبل از آزادسازی) — ممکنه چند تا باشن
+    const { data: units, error: unitsError } = await supabase
       .from("units")
       .select("code,building,number")
-      .eq("person_id", personId)
-      .maybeSingle();
+      .eq("person_id", personId);
 
-    if (unitError) throw unitError;
+    if (unitsError) throw unitsError;
 
-    // ۳. آزادسازی واحد
+    // ۳. آزادسازی همه‌ی واحدها
     const { error: updateError } = await supabase
       .from("units")
       .update({
@@ -505,15 +480,17 @@ export async function releaseUnitAction(personId) {
 
     if (updateError) throw updateError;
 
-    // ۴. ثبت در تاریخچه (اگه فرد و واحد پیدا شدن)
-    if (person && unit) {
-      await logAssignmentHistory(supabase, {
-        action: "حذف کابر و آزاد سازی واحد",
-        unitCode: unit.code,
-        building: unit.building,
-        unitNumber: unit.number,
-        person,
-      });
+    // ۴. ثبت هر واحد در تاریخچه
+    if (person && units && units.length > 0) {
+      for (const unit of units) {
+        await logAssignmentHistory(supabase, {
+          action: " آزاد سازی واحد",
+          unitCode: unit.code,
+          building: unit.building,
+          unitNumber: unit.number,
+          person,
+        });
+      }
     }
 
     revalidatePath("/");
@@ -534,7 +511,6 @@ export async function resetAllAction() {
   try {
     const supabase = createServerSupabase();
 
-    // آزادسازی همه‌ی واحدها
     const { error: unitsError } = await supabase
       .from("units")
       .update({
@@ -545,7 +521,6 @@ export async function resetAllAction() {
 
     if (unitsError) throw unitsError;
 
-    // حذف همه‌ی افراد
     const { error: peopleError } = await supabase
       .from("people")
       .delete()
@@ -582,8 +557,6 @@ export async function getAssignmentsHistory() {
   }
 }
 
-
-
 /**
  * فقط کد واحدهای تخصیص‌یافته رو برمی‌گردونه (بدون اطلاعات شخص).
  * برای صفحه‌ی اسکن عمومی که نباید اطلاعات لو بره.
@@ -601,5 +574,141 @@ export async function getTakenUnitsOnly() {
     return { ok: true, codes: (data || []).map((u) => u.code) };
   } catch (error) {
     return { ok: false, error: error.message, codes: [] };
+  }
+}
+
+
+
+/**
+ * آزادسازی یک واحد خاص از یک فرد.
+ * فقط واحد مشخص‌شده رو آزاد می‌کنه (بقیه دست نمی‌خورن).
+ */
+export async function releaseSingleUnitAction(unitCode) {
+  if (!unitCode) {
+    return { ok: false, error: "کد واحد نامعتبر است." };
+  }
+
+  try {
+    const supabase = createServerSupabase();
+    const code = String(unitCode).trim().toUpperCase();
+
+    // ۱. اطلاعات واحد و فرد فعلی
+    const { data: unit, error: unitError } = await supabase
+      .from("units")
+      .select("code,building,number,person_id")
+      .eq("code", code)
+      .maybeSingle();
+
+    if (unitError) throw unitError;
+    if (!unit) return { ok: false, error: "این واحد وجود ندارد." };
+    if (!unit.person_id) {
+      return { ok: false, error: "این واحد در حال حاضر آزاد است." };
+    }
+
+    // ۲. اطلاعات فرد
+    const { data: person, error: personError } = await supabase
+      .from("people")
+      .select("id,name,national_id,phone,address")
+      .eq("id", unit.person_id)
+      .maybeSingle();
+
+    if (personError) throw personError;
+
+    // ۳. آزادسازی واحد
+    const { error: updateError } = await supabase
+      .from("units")
+      .update({
+        person_id: null,
+        assigned_at: null,
+      })
+      .eq("code", code);
+
+    if (updateError) throw updateError;
+
+    // ۴. ثبت در تاریخچه
+    if (person) {
+      await logAssignmentHistory(supabase, {
+        action: "آزادسازی واحد",
+        unitCode: code,
+        building: unit.building,
+        unitNumber: unit.number,
+        person,
+      });
+    }
+
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message || "آزادسازی واحد ناموفق بود." };
+  }
+}
+
+
+
+/**
+ * ویرایش اطلاعات یک فرد.
+ * - نام، تلفن، کد ملی، آدرس
+ */
+export async function updatePersonAction(personId, formData) {
+  if (!personId) {
+    return { ok: false, error: "شناسه فرد نامعتبر است." };
+  }
+
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim() || null;
+  const nationalId = String(formData.get("national_id") || "").trim() || null;
+  const address = String(formData.get("address") || "").trim() || null;
+
+  if (!name || name.length < 3) {
+    return { ok: false, error: "نام باید حداقل ۳ حرف باشد." };
+  }
+  if (!/^\d{10}$/.test(nationalId)) {
+    return { ok: false, error: "کد ملی باید ۱۰ رقم عددی باشد." };
+  }
+  if (!/^09\d{9}$/.test(phone)) {
+    return {
+      ok: false,
+      error: "شماره تماس باید با ۰۹ شروع شود و ۱۱ رقم باشد.",
+    };
+  }
+  if (!address || address.length < 5) {
+    return { ok: false, error: "آدرس باید حداقل ۵ حرف باشد." };
+  }
+
+  try {
+    const supabase = createServerSupabase();
+
+    // چک تکراری بودن کد ملی (برای بقیه)
+    const { data: existingId, error: idCheckError } = await supabase
+      .from("people")
+      .select("id,name")
+      .eq("national_id", nationalId)
+      .neq("id", personId)         // ← خودش نه
+      .maybeSingle();
+
+    if (idCheckError) throw idCheckError;
+    if (existingId) {
+      return {
+        ok: false,
+        error: `این کد ملی قبلاً برای «${existingId.name}» ثبت شده است.`,
+      };
+    }
+
+    const { error } = await supabase
+      .from("people")
+      .update({ name, phone, national_id: nationalId, address })
+      .eq("id", personId);
+
+    if (error) {
+      if (error.code === "23505") {
+        return { ok: false, error: "این کد ملی قبلاً ثبت شده است." };
+      }
+      throw error;
+    }
+
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message || "ویرایش فرد ناموفق بود." };
   }
 }

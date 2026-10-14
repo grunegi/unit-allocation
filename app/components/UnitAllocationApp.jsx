@@ -11,7 +11,9 @@ import {
   importPeopleAction,
   releaseUnitAction,
   resetAllAction,
+  releaseSingleUnitAction,
   getAssignmentsHistory,
+  updatePersonAction,
 } from "../Js/actions";
 
 const BUILDINGS = { A1: 40, A2: 40, A3: 40, C1: 40, C2: 40, C3: 40, B1: 22 };
@@ -50,11 +52,20 @@ export default function UnitAllocationApp({ initialData }) {
   const [newNationalId, setNewNationalId] = useState("");
   const [newAddress, setNewAddress] = useState("");
 
+  const [peopleSearch, setPeopleSearch] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
   const [importTab, setImportTab] = useState("text");
   const [importText, setImportText] = useState("");
   const [importFile, setImportFile] = useState(null);
   const [importError, setImportError] = useState("");
+
+  // ===== state ویرایش =====
+  const [editModal, setEditModal] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editNationalId, setEditNationalId] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editError, setEditError] = useState("");
 
   const [message, setMessage] = useState(
     initialData.ok ? "" : `خطای اتصال به دیتابیس: ${initialData.error}`,
@@ -89,6 +100,16 @@ export default function UnitAllocationApp({ initialData }) {
       }),
     [filterBuilding, filterStatus, search, assignments],
   );
+
+  const personUnitsMap = useMemo(() => {
+    const map = {};
+    for (const [code, a] of Object.entries(assignments)) {
+      if (!a.personId) continue;
+      if (!map[a.personId]) map[a.personId] = [];
+      map[a.personId].push(code);
+    }
+    return map;
+  }, [assignments]);
 
   function notify(text) {
     setMessage(text);
@@ -133,8 +154,8 @@ export default function UnitAllocationApp({ initialData }) {
       </main>
     );
   }
+
   function refreshFromServer() {
-    // Refreshing the page re-fetches the authoritative data from the server.
     router.refresh();
   }
 
@@ -184,6 +205,50 @@ export default function UnitAllocationApp({ initialData }) {
     );
   }
 
+  // ===== توابع ویرایش =====
+  function openEditModal(person) {
+    setEditModal(person);
+    setEditName(person.name || "");
+    setEditNationalId(person.national_id || "");
+    setEditPhone(person.phone || "");
+    setEditAddress(person.address || "");
+    setEditError("");
+  }
+
+  function closeEditModal() {
+    setEditModal(null);
+    setEditError("");
+  }
+
+  function submitEdit(event) {
+    event.preventDefault();
+    setEditError("");
+
+    if (!editName.trim() || editName.trim().length < 3) {
+      return setEditError("نام باید حداقل ۳ حرف باشد.");
+    }
+    if (!/^\d{10}$/.test(editNationalId)) {
+      return setEditError("کد ملی باید ۱۰ رقم عددی باشد.");
+    }
+    if (!/^09\d{9}$/.test(editPhone)) {
+      return setEditError("شماره تماس باید با ۰۹ شروع شود و ۱۱ رقم باشد.");
+    }
+    if (!editAddress.trim() || editAddress.trim().length < 5) {
+      return setEditError("آدرس باید حداقل ۵ حرف باشد.");
+    }
+
+    const formData = new FormData();
+    formData.set("name", editName);
+    formData.set("phone", editPhone);
+    formData.set("national_id", editNationalId);
+    formData.set("address", editAddress);
+
+    runAction(
+      () => updatePersonAction(editModal.id, formData),
+      () => closeEditModal(),
+    );
+  }
+
   function assign() {
     if (!personId) return notify("ابتدا فرد را انتخاب کنید.");
     if (!unitCode.trim()) return notify("کد واحد را وارد کنید.");
@@ -191,12 +256,13 @@ export default function UnitAllocationApp({ initialData }) {
   }
 
   function removePerson(person) {
-    if (
-      !window.confirm(
-        `فرد «${person.name}» حذف شود؟ تخصیص احتمالی او نیز آزاد می‌شود.`,
-      )
-    )
-      return;
+    const personUnits = personUnitsMap[person.id] || [];
+    const unitsText =
+      personUnits.length > 0
+        ? `\nواحدهای او (${personUnits.join(", ")}) نیز آزاد می‌شوند.`
+        : "";
+
+    if (!window.confirm(`فرد «${person.name}» حذف شود؟${unitsText}`)) return;
     runAction(async () => {
       const released = await releaseUnitAction(person.id);
       if (!released.ok) return released;
@@ -218,7 +284,6 @@ export default function UnitAllocationApp({ initialData }) {
     }
 
     try {
-      // dynamic import — فقط وقتی لازم شد لود می‌شه
       const XLSX = await import("xlsx");
 
       const rows = result.data.map((h, i) => ({
@@ -238,18 +303,17 @@ export default function UnitAllocationApp({ initialData }) {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "تاریخچه");
 
-      // تنظیم عرض ستون‌ها
       worksheet["!cols"] = [
-        { wch: 6 }, // ردیف
-        { wch: 20 }, // تاریخ
-        { wch: 25 }, // عملیات
-        { wch: 12 }, // کد واحد
-        { wch: 10 }, // ساختمان
-        { wch: 10 }, // شماره واحد
-        { wch: 25 }, // نام
-        { wch: 12 }, // کد ملی
-        { wch: 15 }, // شماره تماس
-        { wch: 40 }, // آدرس
+        { wch: 6 },
+        { wch: 20 },
+        { wch: 25 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 25 },
+        { wch: 12 },
+        { wch: 15 },
+        { wch: 40 },
       ];
 
       XLSX.writeFile(workbook, `assignments-history-${Date.now()}.xlsx`);
@@ -305,7 +369,6 @@ export default function UnitAllocationApp({ initialData }) {
       const generated = [];
       const batchSize = 20;
 
-      // Generate in small batches so the browser stays responsive.
       for (let start = 0; start < ALL_UNITS.length; start += batchSize) {
         const batch = ALL_UNITS.slice(start, start + batchSize);
         const batchResults = await Promise.all(
@@ -374,7 +437,6 @@ export default function UnitAllocationApp({ initialData }) {
       .map((l) => l.trim())
       .filter(Boolean);
 
-    // حذف هدر اگه وجود داشت
     const firstLine = lines[0]?.toLowerCase() || "";
     const dataLines =
       firstLine.includes("نام") && firstLine.includes("کد ملی")
@@ -495,24 +557,22 @@ export default function UnitAllocationApp({ initialData }) {
       {tab === "select" && (
         <section className="card">
           <h2>ثبت تخصیص</h2>
-          <label htmlFor="person">فرد (به ترتیب اولویت)</label>
+          <label htmlFor="person">فرد</label>
           <select
             id="person"
             value={personId}
             onChange={(e) => setPersonId(e.target.value)}
           >
             <option value="">-- انتخاب کنید --</option>
-            {people.map((p) => (
-              <option
-                key={p.id}
-                value={p.id}
-                disabled={Object.values(assignments).some(
-                  (a) => a.personId === p.id,
-                )}
-              >
-                {p.name}
-              </option>
-            ))}
+            {people.map((p) => {
+              const count = (personUnitsMap[p.id] || []).length;
+              return (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {count > 0 ? ` (${count} واحد)` : ""}
+                </option>
+              );
+            })}
           </select>
           <label htmlFor="unit">کد واحد (یا اسکن کنید)</label>
           <input
@@ -576,7 +636,8 @@ export default function UnitAllocationApp({ initialData }) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="جستجوی کد واحد یا نام فرد..."
+            placeholder="جستجوی کد واحد یا نام ساکن..."
+            className="search-input"
           />
           <p className="stats">
             کل: {ALL_UNITS.length} | انتخاب‌شده: {takenCount} | آزاد:{" "}
@@ -663,33 +724,100 @@ export default function UnitAllocationApp({ initialData }) {
           </form>
 
           <h2 className="section-title">لیست افراد ({people.length})</h2>
-          {people.map((p, i) => {
-            const assignment = Object.entries(assignments).find(
-              ([, a]) => a.personId === p.id,
-            )?.[0];
-            return (
-              <div className="person-item" key={p.id}>
-                <div className="person-info">
-                  <strong>
-                    {i + 1}. {p.name}
-                    {assignment ? ` ✅ (${assignment})` : ""}
-                  </strong>
-                  <div className="person-meta">
-                    {p.national_id && <span>🆔 {p.national_id}</span>}
-                    {p.phone && <span>📞 {p.phone}</span>}
-                    {p.address && <span>📍 {p.address}</span>}
+
+          <input
+            value={peopleSearch}
+            onChange={(e) => setPeopleSearch(e.target.value)}
+            placeholder="🔍 جستجو با نام، کد ملی، تلفن یا آدرس..."
+            className="search-input"
+          />
+
+          {(() => {
+            const q = peopleSearch.toLowerCase().trim();
+            const filteredPeople = people.filter((p) => {
+              if (!q) return true;
+              return (
+                p.name?.toLowerCase().includes(q) ||
+                p.national_id?.includes(q) ||
+                p.phone?.includes(q) ||
+                p.address?.toLowerCase().includes(q)
+              );
+            });
+
+            if (!filteredPeople.length) {
+              return (
+                <p className="stats">
+                  {q ? "هیچ فردی با این جستجو پیدا نشد." : "هیچ فردی ثبت نشده."}
+                </p>
+              );
+            }
+
+            return filteredPeople.map((p) => {
+              const originalIndex = people.findIndex((x) => x.id === p.id);
+              const personUnits = personUnitsMap[p.id] || [];
+
+              return (
+                <div className="person-item" key={p.id}>
+                  <div className="person-info">
+                    <strong>
+                      {originalIndex + 1}. {p.name}
+                      {personUnits.length > 0 && (
+                        <span className="person-units">
+                          {personUnits.map((unit) => (
+                            <span className="unit-chip" key={unit}>
+                              🏠 {unit}
+                              <button
+                                type="button"
+                                className="unit-chip-remove"
+                                disabled={busy}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    window.confirm(
+                                      `واحد «${unit}» از «${p.name}» آزاد شود؟`,
+                                    )
+                                  ) {
+                                    runAction(() =>
+                                      releaseSingleUnitAction(unit),
+                                    );
+                                  }
+                                }}
+                                title="آزادسازی این واحد"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </strong>
+                    <div className="person-meta">
+                      {p.national_id && <span>🆔 {p.national_id}</span>}
+                      {p.phone && <span>📞 {p.phone}</span>}
+                      {p.address && <span>📍 {p.address}</span>}
+                    </div>
+                  </div>
+                  <div className="person-actions">
+                    <button
+                      className="gray small"
+                      disabled={busy}
+                      onClick={() => openEditModal(p)}
+                      title="ویرایش اطلاعات"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="danger small"
+                      disabled={busy}
+                      onClick={() => removePerson(p)}
+                    >
+                      حذف
+                    </button>
                   </div>
                 </div>
-                <button
-                  className="danger small"
-                  disabled={busy}
-                  onClick={() => removePerson(p)}
-                >
-                  حذف
-                </button>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </section>
       )}
 
@@ -705,7 +833,6 @@ export default function UnitAllocationApp({ initialData }) {
         <section className="card">
           <h2>🖨 ساخت و چاپ QR کد واحدها</h2>
 
-          {/* هشدار مهم */}
           <div className="warning-box">
             <strong>⚠️ توجه مهم</strong>
             <p>
@@ -793,6 +920,7 @@ export default function UnitAllocationApp({ initialData }) {
         </section>
       )}
 
+      {/* ===== Modal ورود گروهی ===== */}
       {showImportModal && (
         <div
           className="modal-overlay"
@@ -893,10 +1021,84 @@ export default function UnitAllocationApp({ initialData }) {
         </div>
       )}
 
-      <footer>
-        اطلاعات از دیتابیس بارگذاری می‌شود؛ برای تازه‌سازی داده‌ها صفحه را
-        دوباره بارگذاری کنید.
-      </footer>
-    </main>
-  );
-}
+      {/* ===== Modal ویرایش فرد ===== */}
+      {editModal && (
+  <div className="modal-overlay" onClick={closeEditModal}>
+    <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>✏️ ویرایش فرد</h2>
+        <button
+          className="modal-close"
+          onClick={closeEditModal}
+          aria-label="بستن"
+        >
+          ×
+        </button>
+      </div>
+
+      <form onSubmit={submitEdit}>
+        <div className="modal-body">
+          <div className="form-row">
+            <label htmlFor="edit-name">نام و نام خانوادگی *</label>
+            <input
+              id="edit-name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <div className="form-row">
+            <label htmlFor="edit-national-id">کد ملی</label>
+            <input
+              id="edit-national-id"
+              value={editNationalId}
+              onChange={(e) => setEditNationalId(e.target.value)}
+              inputMode="numeric"
+              maxLength={10}
+            />
+          </div>
+
+          <div className="form-row">
+            <label htmlFor="edit-phone">شماره تماس</label>
+            <input
+              id="edit-phone"
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              inputMode="tel"
+            />
+          </div>
+
+          <div className="form-row">
+            <label htmlFor="edit-address">آدرس</label>
+            <textarea
+              id="edit-address"
+              value={editAddress}
+              onChange={(e) => setEditAddress(e.target.value)}
+              rows={2}
+            />
+          </div>
+
+          {editError && (
+            <p className="modal-error" role="alert">
+              ❌ {editError}
+            </p>
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="gray"
+            onClick={closeEditModal}
+          >
+            انصراف
+          </button>
+          <button type="submit" disabled={busy}>
+            {busy ? "در حال ذخیره..." : "✅ ذخیره"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)} </main> )}
