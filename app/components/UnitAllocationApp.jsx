@@ -908,7 +908,6 @@ export default function UnitAllocationApp({ initialData }) {
           })()}
         </section>
       )}
-      
       {tab === "scan" && (
         <section className="card">
           <h2>📷 اسکن و بررسی واحد</h2>
@@ -922,7 +921,6 @@ export default function UnitAllocationApp({ initialData }) {
           />
         </section>
       )}
-
       {tab === "print" && (
         <section className="card">
           <h2>🖨 ساخت و چاپ QR کد واحدها</h2>

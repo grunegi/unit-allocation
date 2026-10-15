@@ -80,6 +80,9 @@ footer { color: #666; font-size: 12px; padding: 10px; }
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .person-meta {
@@ -288,8 +291,6 @@ footer { color: #666; font-size: 12px; padding: 10px; }
   border-color: #2196f3;
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
-
-
 
 
 .person-units {
@@ -530,10 +531,10 @@ footer { color: #666; font-size: 12px; padding: 10px; }
 }
 
 
-/* دکمه‌های ویرایش و حذف کنار هم */
+/* دکمه‌های ویرایش/حذف */
 .person-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   flex-shrink: 0;
 }
