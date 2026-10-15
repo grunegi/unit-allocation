@@ -51,6 +51,7 @@ export default function UnitAllocationApp({ initialData }) {
   const [newPhone, setNewPhone] = useState("");
   const [newNationalId, setNewNationalId] = useState("");
   const [newAddress, setNewAddress] = useState("");
+  const [collapsedBuildings, setCollapsedBuildings] = useState({});
 
   const [peopleSearch, setPeopleSearch] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
@@ -532,7 +533,6 @@ export default function UnitAllocationApp({ initialData }) {
           {ALL_UNITS.length - takenCount}
         </p>
       </header>
-
       {message && (
         <div className="notice" role="status">
           {message}
@@ -541,7 +541,6 @@ export default function UnitAllocationApp({ initialData }) {
           </button>
         </div>
       )}
-
       <nav className="tabs" aria-label="بخش‌های برنامه">
         {TABS.map(([id, label]) => (
           <button
@@ -553,7 +552,6 @@ export default function UnitAllocationApp({ initialData }) {
           </button>
         ))}
       </nav>
-
       {tab === "select" && (
         <section className="card">
           <h2>ثبت تخصیص</h2>
@@ -595,22 +593,61 @@ export default function UnitAllocationApp({ initialData }) {
               پاک کردن فرم
             </button>
           </div>
+
           <h2 className="section-title">واحدها</h2>
-          <div className="unit-grid">
-            {ALL_UNITS.map((code) => (
-              <button
-                key={code}
-                className={`unit ${assignments[code] ? "taken" : ""}`}
-                onClick={() => setUnitCode(code)}
-              >
-                <strong>{code}</strong>
-                <small>{assignments[code]?.name || "آزاد"}</small>
-              </button>
-            ))}
-          </div>
+
+          {Object.keys(BUILDINGS).map((building) => {
+            const buildingUnits = ALL_UNITS.filter((code) =>
+              code.startsWith(`${building}-`),
+            );
+            const takenInBuilding = buildingUnits.filter(
+              (code) => assignments[code],
+            ).length;
+            const isCollapsed = collapsedBuildings[building];
+
+            return (
+              <div className="building-section" key={building}>
+                <button
+                  type="button"
+                  className="building-header"
+                  onClick={() =>
+                    setCollapsedBuildings((prev) => ({
+                      ...prev,
+                      [building]: !prev[building],
+                    }))
+                  }
+                  aria-expanded={!isCollapsed}
+                >
+                  <span className="building-title">
+                    <span className="building-caret">
+                      {isCollapsed ? "▶" : "▼"}
+                    </span>
+                    🏢 {building}
+                  </span>
+                  <span className="building-stats">
+                    {takenInBuilding} از {buildingUnits.length} تخصیص‌یافته
+                  </span>
+                </button>
+
+                {!isCollapsed && (
+                  <div className="unit-grid">
+                    {buildingUnits.map((code) => (
+                      <button
+                        key={code}
+                        className={`unit ${assignments[code] ? "taken" : ""}`}
+                        onClick={() => setUnitCode(code)}
+                      >
+                        <strong>{code}</strong>
+                        <small>{assignments[code]?.name || "آزاد"}</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
-
       {tab === "filter" && (
         <section className="card">
           <h2>🔍 جستجو و فیلتر</h2>
@@ -643,20 +680,71 @@ export default function UnitAllocationApp({ initialData }) {
             کل: {ALL_UNITS.length} | انتخاب‌شده: {takenCount} | آزاد:{" "}
             {ALL_UNITS.length - takenCount} | نتایج: {filteredUnits.length}
           </p>
-          <div className="unit-grid">
-            {filteredUnits.map((code) => (
-              <div
-                className={`unit ${assignments[code] ? "taken" : ""}`}
-                key={code}
-              >
-                <strong>{code}</strong>
-                <small>{assignments[code]?.name || "آزاد"}</small>
-              </div>
-            ))}
-          </div>
+
+          {/* گرید گروه‌بندی‌شده بر اساس ساختمان */}
+          {(() => {
+            if (!filteredUnits.length) {
+              return <p className="stats">هیچ نتیجه‌ای پیدا نشد.</p>;
+            }
+
+            // گروه‌بندی نتایج بر اساس ساختمان
+            const grouped = {};
+            for (const code of filteredUnits) {
+              const building = code.split("-")[0];
+              if (!grouped[building]) grouped[building] = [];
+              grouped[building].push(code);
+            }
+
+            return Object.entries(grouped).map(([building, units]) => {
+              const takenInBuilding = units.filter(
+                (code) => assignments[code],
+              ).length;
+              const collapseKey = `filter-${building}`;
+              const isCollapsed = collapsedBuildings[collapseKey];
+
+              return (
+                <div className="building-section" key={building}>
+                  <button
+                    type="button"
+                    className="building-header"
+                    onClick={() =>
+                      setCollapsedBuildings((prev) => ({
+                        ...prev,
+                        [collapseKey]: !prev[collapseKey],
+                      }))
+                    }
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className="building-title">
+                      <span className="building-caret">
+                        {isCollapsed ? "▶" : "▼"}
+                      </span>
+                      🏢 {building}
+                    </span>
+                    <span className="building-stats">
+                      {takenInBuilding} از {units.length} تخصیص‌یافته
+                    </span>
+                  </button>
+
+                  {!isCollapsed && (
+                    <div className="unit-grid">
+                      {units.map((code) => (
+                        <div
+                          className={`unit ${assignments[code] ? "taken" : ""}`}
+                          key={code}
+                        >
+                          <strong>{code}</strong>
+                          <small>{assignments[code]?.name || "آزاد"}</small>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </section>
       )}
-
       {tab === "people" && (
         <section className="card">
           <h2>افزودن فرد</h2>
@@ -820,12 +908,18 @@ export default function UnitAllocationApp({ initialData }) {
           })()}
         </section>
       )}
-
+      
       {tab === "scan" && (
         <section className="card">
-          <h2>📷 اسکن کد واحد</h2>
-          <p>دوربین را به سمت QR code بگیرید.</p>
-          <UnitStatusScanner assignments={assignments} />
+          <h2>📷 اسکن و بررسی واحد</h2>
+          <p>
+            می‌توانید QR را اسکن کنید، کد را تایپ کنید، یا از لیست انتخاب کنید.
+          </p>
+          <UnitStatusScanner
+            assignments={assignments}
+            people={people}
+            showPersonInfo={true}
+          />
         </section>
       )}
 
@@ -896,7 +990,6 @@ export default function UnitAllocationApp({ initialData }) {
           </div>
         </section>
       )}
-
       {tab === "data" && (
         <section className="card">
           <h2>💾 پشتیبان‌گیری</h2>
@@ -919,7 +1012,6 @@ export default function UnitAllocationApp({ initialData }) {
           </button>
         </section>
       )}
-
       {/* ===== Modal ورود گروهی ===== */}
       {showImportModal && (
         <div
@@ -1020,85 +1112,83 @@ export default function UnitAllocationApp({ initialData }) {
           </div>
         </div>
       )}
-
       {/* ===== Modal ویرایش فرد ===== */}
       {editModal && (
-  <div className="modal-overlay" onClick={closeEditModal}>
-    <div className="modal" onClick={(e) => e.stopPropagation()}>
-      <div className="modal-header">
-        <h2>✏️ ویرایش فرد</h2>
-        <button
-          className="modal-close"
-          onClick={closeEditModal}
-          aria-label="بستن"
-        >
-          ×
-        </button>
-      </div>
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>✏️ ویرایش فرد</h2>
+              <button
+                className="modal-close"
+                onClick={closeEditModal}
+                aria-label="بستن"
+              >
+                ×
+              </button>
+            </div>
 
-      <form onSubmit={submitEdit}>
-        <div className="modal-body">
-          <div className="form-row">
-            <label htmlFor="edit-name">نام و نام خانوادگی *</label>
-            <input
-              id="edit-name"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              autoFocus
-            />
+            <form onSubmit={submitEdit}>
+              <div className="modal-body">
+                <div className="form-row">
+                  <label htmlFor="edit-name">نام و نام خانوادگی *</label>
+                  <input
+                    id="edit-name"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="form-row">
+                  <label htmlFor="edit-national-id">کد ملی</label>
+                  <input
+                    id="edit-national-id"
+                    value={editNationalId}
+                    onChange={(e) => setEditNationalId(e.target.value)}
+                    inputMode="numeric"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <label htmlFor="edit-phone">شماره تماس</label>
+                  <input
+                    id="edit-phone"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    inputMode="tel"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <label htmlFor="edit-address">آدرس</label>
+                  <textarea
+                    id="edit-address"
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                {editError && (
+                  <p className="modal-error" role="alert">
+                    ❌ {editError}
+                  </p>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="gray" onClick={closeEditModal}>
+                  انصراف
+                </button>
+                <button type="submit" disabled={busy}>
+                  {busy ? "در حال ذخیره..." : "✅ ذخیره"}
+                </button>
+              </div>
+            </form>
           </div>
-
-          <div className="form-row">
-            <label htmlFor="edit-national-id">کد ملی</label>
-            <input
-              id="edit-national-id"
-              value={editNationalId}
-              onChange={(e) => setEditNationalId(e.target.value)}
-              inputMode="numeric"
-              maxLength={10}
-            />
-          </div>
-
-          <div className="form-row">
-            <label htmlFor="edit-phone">شماره تماس</label>
-            <input
-              id="edit-phone"
-              value={editPhone}
-              onChange={(e) => setEditPhone(e.target.value)}
-              inputMode="tel"
-            />
-          </div>
-
-          <div className="form-row">
-            <label htmlFor="edit-address">آدرس</label>
-            <textarea
-              id="edit-address"
-              value={editAddress}
-              onChange={(e) => setEditAddress(e.target.value)}
-              rows={2}
-            />
-          </div>
-
-          {editError && (
-            <p className="modal-error" role="alert">
-              ❌ {editError}
-            </p>
-          )}
         </div>
-
-        <div className="modal-actions">
-          <button
-            type="button"
-            className="gray"
-            onClick={closeEditModal}
-          >
-            انصراف
-          </button>
-          <button type="submit" disabled={busy}>
-            {busy ? "در حال ذخیره..." : "✅ ذخیره"}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)} </main> )}
+      )}{" "}
+    </main>
+  );
+}

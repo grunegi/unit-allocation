@@ -338,3 +338,202 @@ footer { color: #666; font-size: 12px; padding: 10px; }
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+
+
+/* بخش ساختمان */
+.building-section {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.building-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  transition: background 0.2s ease;
+  text-align: right;
+}
+
+.building-header:hover {
+  background: #ebebeb;
+}
+
+.building-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.building-caret {
+  display: inline-block;
+  width: 16px;
+  font-size: 0.75rem;
+  color: #666;
+  transition: transform 0.2s ease;
+}
+
+.building-stats {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  background: #fff;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.building-section .unit-grid {
+  padding: 12px;
+  margin: 0;
+}
+
+
+
+/* جستجوی دستی */
+.manual-search-form {
+  margin-bottom: 16px;
+}
+
+.manual-search-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 1rem;
+}
+
+.manual-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.manual-search-row input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 1px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.manual-search-row input:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+}
+
+.manual-search-btn {
+  padding: 12px 24px;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+/* انتخاب از لیست */
+.list-search-form {
+  margin-bottom: 16px;
+}
+
+.list-search-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 1rem;
+}
+
+.list-search-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.list-search-row select {
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+  cursor: pointer;
+}
+
+.list-search-row select:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+}
+
+.list-search-row select:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* جداکننده */
+.scanner-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.scanner-divider::before,
+.scanner-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+
+
+.scan-person {
+  text-align: right;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin: 12px auto;
+  display: inline-block;
+  min-width: 260px;
+  max-width: 100%;
+}
+
+.scan-person p {
+  margin: 6px 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.scan-person strong {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+
+/* دکمه‌های ویرایش و حذف کنار هم */
+.person-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}

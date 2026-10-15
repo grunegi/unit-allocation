@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 export default async function ScannerPage() {
   const result = await getTakenUnitsOnly();
 
-  // تبدیل به آبجکت: { "A1-1": true, "A1-5": true, ... }
   const takenUnits = {};
   if (result.ok) {
     for (const code of result.codes) {
@@ -17,12 +16,20 @@ export default async function ScannerPage() {
   return (
     <main className="container">
       <header className="card">
-        <h1>📷 اسکن واحد</h1>
-        <p>دوربین را به سمت QR کد واحد بگیرید.</p>
+        <h1>🔍 بررسی وضعیت واحد</h1>
+        <p>
+          برای بررسی وضعیت یک واحد، یکی از روش‌های زیر را انتخاب کنید:
+        </p>
+        <ul className="header-list">
+          <li>📷 <strong>اسکن</strong> کد QR واحد</li>
+          <li>⌨️ <strong>تایپ</strong> کد واحد (مثلاً A1-15)</li>
+          <li>📋 <strong>انتخاب</strong> از لیست ساختمان و شماره</li>
+        </ul>
       </header>
 
       <section className="card">
         <UnitStatusScanner assignments={takenUnits} />
+        {/* showPersonInfo پیش‌فرض false هست ✅ */}
       </section>
     </main>
   );
