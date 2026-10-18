@@ -1,0 +1,79 @@
+/* ===== Confirm Modal ===== */
+.confirm-modal {
+  max-width: 420px;
+}
+
+.confirm-modal-body {
+  text-align: center;
+  padding: 28px 24px;
+}
+
+.confirm-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.confirm-icon.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  animation: pulse-danger 1.8s ease-in-out infinite;
+}
+
+.confirm-icon.info {
+  background: rgba(79, 70, 229, 0.15);
+  border: 2px solid rgba(79, 70, 229, 0.4);
+  animation: pulse-info 1.8s ease-in-out infinite;
+}
+
+.confirm-message {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-soft, #cbd5e1);
+  line-height: 1.9;
+}
+
+.confirm-message strong {
+  color: var(--text-light, #f8fafc);
+  font-weight: 700;
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes pulse-info {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+  }
+}
+
+@media (max-width: 600px) {
+  .confirm-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+  }
+
+  .confirm-message {
+    font-size: 0.9rem;
+  }
+}

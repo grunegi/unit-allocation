@@ -53,6 +53,7 @@ export async function getInitialData() {
       supabase
         .from("people")
         .select("id,name,phone,national_id,address,score,created_at")
+        .order("score", { ascending: false })
         .order("created_at", { ascending: true }),
       supabase
         .from("units")
@@ -93,9 +94,6 @@ export async function getInitialData() {
 // مدیریت افراد
 // ============================================================
 
-/**
- * افزودن فرد جدید — فقط نام، کد ملی و امتیاز.
- */
 export async function addPersonAction(formData) {
   const name = String(formData.get("name") || "").trim();
   const nationalId = String(formData.get("national_id") || "").trim() || null;
@@ -162,9 +160,6 @@ export async function addPersonAction(formData) {
   }
 }
 
-/**
- * ورود گروهی افراد — فرمت: نام, کد ملی, امتیاز
- */
 export async function importPeopleAction(rows) {
   if (!Array.isArray(rows)) {
     return { ok: false, error: "فرمت ورودی نامعتبر است." };
@@ -268,9 +263,6 @@ export async function importPeopleAction(rows) {
   }
 }
 
-/**
- * حذف فرد — واحدهای او خودکار آزاد می‌شوند.
- */
 export async function deletePersonAction(personId) {
   if (!personId) {
     return { ok: false, error: "شناسه فرد نامعتبر است." };
@@ -515,9 +507,6 @@ export async function getTakenUnitsOnly() {
   }
 }
 
-/**
- * آزادسازی یک واحد خاص از یک فرد.
- */
 export async function releaseSingleUnitAction(unitCode) {
   if (!unitCode) {
     return { ok: false, error: "کد واحد نامعتبر است." };
@@ -574,9 +563,6 @@ export async function releaseSingleUnitAction(unitCode) {
   }
 }
 
-/**
- * ویرایش فرد — فقط نام، کد ملی و امتیاز.
- */
 export async function updatePersonAction(personId, formData) {
   if (!personId) {
     return { ok: false, error: "شناسه فرد نامعتبر است." };
@@ -674,10 +660,10 @@ export async function getDashboardStats() {
   }
 }
 
-/**
- * تخصیص خودکار واحدهای آزاد یک ساختمان به افراد بدون واحد،
- * بر اساس امتیاز (نزولی).
- */
+// ============================================================
+// تخصیص خودکار
+// ============================================================
+
 export async function autoAssignBlockAction(building) {
   if (!building) {
     return { ok: false, error: "نام ساختمان نامعتبر است." };
@@ -701,10 +687,16 @@ export async function autoAssignBlockAction(building) {
 
     const { data: allPeople, error: peopleError } = await supabase
       .from("people")
-      .select("id,name,national_id,phone,address,score")
-      .order("score", { ascending: false });
+      .select("id,name,national_id,phone,address,score,created_at")
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: true });
 
     if (peopleError) throw peopleError;
+
+    const rankedPeople = (allPeople || []).map((p, index) => ({
+      ...p,
+      priority: index + 1,
+    }));
 
     const { data: assignedUnits, error: assignedError } = await supabase
       .from("units")
@@ -717,7 +709,7 @@ export async function autoAssignBlockAction(building) {
       (assignedUnits || []).map((u) => u.person_id),
     );
 
-    const availablePeople = (allPeople || []).filter(
+    const availablePeople = rankedPeople.filter(
       (p) => !assignedPersonIds.has(p.id),
     );
 
@@ -766,17 +758,17 @@ export async function autoAssignBlockAction(building) {
     return {
       ok: true,
       count,
-      message: `${count} واحد در بلوک ${building} تخصیص یافت.`,
+      message: `${count} واحد در بلوک ${building} تخصیص یافت (به ترتیب اولویت).`,
     };
   } catch (error) {
     return { ok: false, error: error.message || "تخصیص خودکار ناموفق بود." };
   }
 }
 
+// ============================================================
+// لاگ‌های اخیر
+// ============================================================
 
-/**
- * دریافت لاگ‌های اخیر (نسخه‌ی سبک — فقط اطلاعات مهم).
- */
 export async function getRecentLogs(limit = 50) {
   try {
     const supabase = createServerSupabase();
@@ -792,7 +784,6 @@ export async function getRecentLogs(limit = 50) {
     return { ok: false, error: error.message, data: [] };
   }
 }
-
 
 // ============================================================
 // تنظیمات (رمز عبور)
@@ -814,9 +805,6 @@ export async function getAdminPassword() {
   }
 }
 
-/**
- * تغییر رمز عبور ادمین در دیتابیس.
- */
 export async function updateAdminPassword(newPassword) {
   if (!newPassword || newPassword.length < 4) {
     return { ok: false, error: "رمز جدید باید حداقل ۴ کاراکتر باشد." };
@@ -839,5 +827,3 @@ export async function updateAdminPassword(newPassword) {
     return { ok: false, error: error.message || "تغییر رمز ناموفق بود." };
   }
 }
-
-

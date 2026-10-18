@@ -5,6 +5,7 @@ import AutoAssignModal from "./AutoAssignModal";
 import DataTab from "./DataTab";
 import PasswordChangeModal from "./PasswordChangeModal";
 import ScanPrintTab from "./ScanPrintTab";
+import ConfirmModal from "./ConfirmModal";
 import { useAuth } from "./AuthProvider";
 
 import { useRouter } from "next/navigation";
@@ -78,6 +79,7 @@ export default function UnitAllocationApp({ initialData }) {
   const [newNationalId, setNewNationalId] = useState("");
   const [newScore, setNewScore] = useState("");
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const [autoAssignModal, setAutoAssignModal] = useState(null);
   const [autoAssignBusy, setAutoAssignBusy] = useState(false);
@@ -127,6 +129,23 @@ export default function UnitAllocationApp({ initialData }) {
       });
     }
   }, [tab, assignments]);
+
+  useEffect(() => {
+    const sorted = [...(initialData.people || [])]
+      .sort((a, b) => {
+        const sa = a.score ?? 0;
+        const sb = b.score ?? 0;
+        if (sa !== sb) return sb - sa;
+        return new Date(a.created_at) - new Date(b.created_at);
+      })
+      .map((p, index) => ({
+        ...p,
+        priority: index + 1,
+      }));
+    setPeople(sorted);
+    setUnits(initialData.units || []);
+    setAssignments(initialData.assignments || {});
+  }, [initialData]);
 
   const [busy, startTransition] = useTransition();
 
@@ -302,14 +321,21 @@ export default function UnitAllocationApp({ initialData }) {
     const personUnits = personUnitsMap[person.id] || [];
     const unitsText =
       personUnits.length > 0
-        ? `\nواحدهای او (${personUnits.join(", ")}) نیز آزاد می‌شوند.`
+        ? ` واحدهای او (${personUnits.join("، ")}) نیز آزاد می‌شوند.`
         : "";
 
-    if (!window.confirm(`فرد «${person.name}» حذف شود؟${unitsText}`)) return;
-    runAction(async () => {
-      const released = await releaseUnitAction(person.id);
-      if (!released.ok) return released;
-      return deletePersonAction(person.id);
+    setConfirmDialog({
+      title: "حذف فرد",
+      message: `آیا از حذف «${person.name}» مطمئنید؟${unitsText}`,
+      danger: true,
+      confirmText: "حذف",
+      onConfirm: () => {
+        runAction(async () => {
+          const released = await releaseUnitAction(person.id);
+          if (!released.ok) return released;
+          return deletePersonAction(person.id);
+        });
+      },
     });
   }
 
@@ -1350,6 +1376,20 @@ export default function UnitAllocationApp({ initialData }) {
         currentPassword={currentPassword}
         onClose={() => setShowPasswordModal(false)}
         onSuccess={handlePasswordChange}
+      />
+
+      <ConfirmModal
+        open={!!confirmDialog}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message}
+        danger={confirmDialog?.danger}
+        confirmText={confirmDialog?.confirmText}
+        onConfirm={() => {
+          const cb = confirmDialog?.onConfirm;
+          setConfirmDialog(null);
+          cb?.();
+        }}
+        onCancel={() => setConfirmDialog(null)}
       />
 
       <AutoAssignModal
