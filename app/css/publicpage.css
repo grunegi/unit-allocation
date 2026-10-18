@@ -1,11 +1,23 @@
-
 /* ========================================
    Public Home - صفحه خوش‌آمدگویی
-   هماهنگ با تم اصلی سامانه
+   تم تیره / شیشه‌ای (Glassmorphism)
+   فقط کلاس‌های مربوط به WelcomePage
+   همه سلکتورها زیر .public-home اسکوپ شده‌اند
 ======================================== */
 
-/* صفحه اصلی */
+/* ---------- صفحه اصلی ---------- */
 .public-home {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --text-light: #f8fafc;
+  --text-muted: #94a3b8;
+  --success: #10b981;
+  --warning: #f59e0b;
+
+  position: relative;
+  isolation: isolate;
   direction: rtl;
   min-height: calc(100vh - 20px);
   max-width: 760px;
@@ -17,135 +29,236 @@
   align-items: center;
   justify-content: center;
   gap: 22px;
+
+  color: var(--text-light);
+  font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
 }
 
-/* هدر صفحه */
-.public-hero {
+/* پس‌زمینه گرادیان تمام‌صفحه (بدون دست‌زدن به body) */
+.public-home::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+}
+
+.public-home *,
+.public-home *::before,
+.public-home *::after {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* ---------- کارت اصلی (تک باکس شیشه‌ای) ---------- */
+.public-home .public-card,
+.public-home .glass-panel {
   width: 100%;
-  padding: 30px 22px;
+  max-width: 450px;
+  margin: 0;
+  padding: 24px;
   text-align: center;
-  color: #fff;
 
-  background: linear-gradient(
-    135deg,
-    #1a4d8f 0%,
-    #1a73e8 100%
-  );
-
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
-  box-shadow: 0 5px 18px #1a4d8f20;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.public-logo {
-  width: 58px;
-  height: 58px;
+/* ---------- هدر (داخل باکس) ---------- */
+.public-home .public-hero {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 0;
+  text-align: center;
+  color: var(--text-light);
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.public-home .public-logo {
+  width: 64px;
+  height: 64px;
   margin: 0 auto 14px;
 
   display: grid;
   place-items: center;
 
-  background: #ffffff20;
-  border: 1px solid #ffffff30;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
 
-  font-size: 34px;
+  font-size: 1.9rem;
 }
 
-.public-hero h1 {
-  color: #fff;
-  font-size: clamp(22px, 4vw, 30px);
-  line-height: 1.7;
-  margin: 0 0 10px;
+.public-home .public-hero h1 {
+  margin: 0 0 8px;
+  color: var(--text-light);
+  font-size: 1.3rem;
+  line-height: 1.6;
 }
 
-.public-hero p {
+.public-home .public-hero p {
   max-width: 520px;
   margin: 0 auto;
-  color: #eaf2ff;
-  font-size: 14px;
-  line-height: 2;
-}
-
-/* حالت فشرده هدر برای صفحات داخلی عمومی */
-.public-hero.compact {
-  padding: 22px;
-}
-
-.public-hero.compact h1 {
-  margin-top: 0;
-}
-
-/* کارت اصلی */
-.public-card {
-  width: 100%;
-  max-width: 520px;
-  padding: 26px 24px;
-
-  text-align: center;
-  background: #fff;
-
-  border: 1px solid #e0e5ec;
-  border-radius: 14px;
-
-  box-shadow: 0 2px 8px #0000000d;
-}
-
-.public-scan-icon {
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 14px;
-
-  display: grid;
-  place-items: center;
-
-  background: #e3f0ff;
-  color: #1a73e8;
-  border-radius: 14px;
-
-  font-size: 34px;
-}
-
-.public-card h2 {
-  margin: 12px 0;
-  color: #1a4d8f;
-  font-size: 19px;
-}
-
-.public-card h3 {
-  margin: 0 0 8px;
-  color: #263238;
-  font-size: 15px;
-}
-
-.public-card > p {
-  margin: 0 0 20px;
-  color: #5f6368;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
   line-height: 1.9;
 }
 
-/* بخش‌های انتخاب دسترسی */
-.public-access-section {
+/* حالت فشرده هدر */
+.public-home .public-hero.compact {
+  padding: 0;
+}
+
+.public-home .public-hero.compact h1 {
+  margin-top: 0;
+}
+
+/* ---------- تب‌ها ---------- */
+.public-home .public-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.public-home .public-tab {
+  position: relative;
+  flex: 1;
+  padding: 12px 8px;
+
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-radius: 10px 10px 0 0;
+
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+
+/* خط زیر تب: از وسط باز می‌شود */
+.public-home .public-tab::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4f46e5, #c084fc);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.7);
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.public-home .public-tab:hover {
+  color: #e2e8f0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  filter: none;
+}
+
+.public-home .public-tab:hover::after {
+  transform: scaleX(0.45);
+}
+
+.public-home .public-tab.active {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    rgba(79, 70, 229, 0) 0%,
+    rgba(79, 70, 229, 0.22) 100%
+  );
+}
+
+.public-home .public-tab.active::after {
+  transform: scaleX(1);
+}
+
+.public-home .public-tab:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: -2px;
+}
+
+/* ---------- محتوای تب ---------- */
+.public-home .public-tab-content {
+  padding: 8px 0 4px;
+  animation: publicFadeIn 0.3s ease;
+}
+
+.public-home .public-scan-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(255, 255, 255, 0.05);
+  color: #c084fc;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+
+  font-size: 2rem;
+}
+
+.public-home .public-card h2 {
+  margin: 0 0 8px;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.public-home .public-card h3 {
+  margin: 0 0 8px;
+  color: #c084fc;
+  font-size: 0.95rem;
+}
+
+.public-home .public-card > p,
+.public-home .public-tab-content p {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.9;
+}
+
+/* ---------- بخش‌های انتخاب دسترسی (قدیمی) ---------- */
+.public-home .public-access-section {
   padding-top: 8px;
 }
 
-.public-access-section + .public-access-section {
+.public-home .public-access-section + .public-access-section {
   margin-top: 24px;
   padding-top: 22px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px dashed var(--glass-border);
 }
 
-.public-access-description {
-  color: #5f6368;
-  font-size: 13px;
-  line-height: 1.9;
+.public-home .public-access-description {
   margin: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.9;
 }
 
-/* دکمه شروع اسکن */
-.public-primary {
+/* ---------- دکمه‌ها (حالت مشترک) ---------- */
+.public-home .public-primary,
+.public-home .public-admin-link {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   padding: 12px 16px;
 
   display: flex;
@@ -153,140 +266,192 @@
   justify-content: center;
   gap: 10px;
 
-  background: #1a73e8;
   color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
 
-  border: 0;
-  border-radius: 8px;
-
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: bold;
   text-decoration: none;
-
   cursor: pointer;
+
+  background-size: 200% 100%;
+  background-position: 100% 0;
   transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    background-position 0.6s ease,
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s ease,
+    border-color 0.35s ease;
 }
 
-.public-primary:hover {
-  background: #155fbd;
-  box-shadow: 0 4px 12px #1a73e830;
+/* خط نورانی که روی دکمه می‌لغزد — نرم‌تر و کندتر */
+.public-home .public-primary::before,
+.public-home .public-admin-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 35%;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.public-primary:active {
-  transform: translateY(1px);
+.public-home .public-primary:hover::before,
+.public-home .public-admin-link:hover::before {
+  left: 120%;
 }
 
-/* دکمه ورود مدیران */
-.public-admin-link {
+/* آیکون اول — بزرگ‌شدن ملایم، بدون چرخش */
+.public-home .public-primary span:first-child,
+.public-home .public-admin-link span:first-child {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.public-home .public-primary:hover span:first-child {
+  transform: scale(1.12);
+}
+
+/* فلش — حرکت ملایم به چپ */
+.public-home .public-primary span:last-child,
+.public-home .public-admin-link span:last-child {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.public-home .public-primary:hover span:last-child,
+.public-home .public-admin-link:hover span:last-child {
+  transform: translateX(-4px);
+}
+
+/* hover — بالارفتن ملایم */
+.public-home .public-primary:hover,
+.public-home .public-admin-link:hover {
+  background-position: 0 0;
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.public-home .public-primary:active,
+.public-home .public-admin-link:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: 0.1s;
+}
+
+.public-home .public-primary:focus-visible,
+.public-home .public-admin-link:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 3px;
+}
+
+/* ---------- دکمه شروع اسکن ---------- */
+.public-home .public-primary {
+  background-image: linear-gradient(
+    90deg,
+    #4338ca 0%,
+    #4f46e5 40%,
+    #7c3aed 100%
+  );
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+}
+
+.public-home .public-primary:hover {
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+/* ---------- دکمه ورود مدیران ---------- */
+.public-home .public-admin-link {
+  background-image: linear-gradient(
+    90deg,
+    #047857 0%,
+    #059669 40%,
+    #10b981 100%
+  );
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+}
+
+.public-home .public-admin-link:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.38);
+}
+
+/* ---------- فوتر ---------- */
+.public-home footer,
+.public-home .public-footer {
   width: 100%;
-  min-height: 46px;
-  padding: 12px 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  background: #e3f0ff;
-  color: #1a4d8f;
-
-  border: 1px solid #c7def8;
-  border-radius: 8px;
-
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.public-admin-link:hover {
-  background: #d3e7ff;
-  border-color: #9fc7f5;
-}
-
-/* فوتر صفحه اصلی */
-.public-home footer {
-  width: 100%;
-  padding: 8px;
-  margin-top: 0;
+  margin-top: 24px;
+  padding: 14px 0 0;
 
   text-align: center;
-  color: #5f6368;
-  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--glass-border);
+  font-size: 0.75rem;
   line-height: 1.8;
 }
 
-/* صفحه اسکن عمومی */
-.public-scanner-page .public-card {
-  max-width: 560px;
+/* ---------- انیمیشن ---------- */
+@keyframes publicFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.scanner-component {
-  width: 100%;
-}
-
-.scanner-controls {
-  margin-top: 12px;
-}
-
-.scanner-controls button {
-  width: 100%;
-}
-
-.scan-result {
-  padding: 10px;
-  margin-top: 12px;
-
-  background: #e6f4ea;
-  color: #137333 !important;
-
-  border: 1px solid #cce8d2;
-  border-radius: 8px;
-
-  overflow-wrap: anywhere;
-}
-
-/* نمایشگرهای کوچک */
+/* ---------- نمایشگرهای کوچک ---------- */
 @media (max-width: 480px) {
   .public-home {
-    min-height: calc(100vh - 20px);
     padding: 10px 2px;
     gap: 14px;
   }
 
-  .public-hero {
-    padding: 24px 16px;
+  .public-home .public-card,
+  .public-home .glass-panel {
+    padding: 18px;
     border-radius: 12px;
   }
 
-  .public-hero h1 {
-    font-size: 22px;
+  .public-home .public-hero h1 {
+    font-size: 1.15rem;
   }
 
-  .public-hero p {
-    font-size: 13px;
+  .public-home .public-hero p {
+    font-size: 0.8rem;
   }
 
-  .public-card {
-    padding: 22px 16px;
-    border-radius: 12px;
+  .public-home .public-tab {
+    font-size: 0.8rem;
   }
 
-  .public-card h2 {
-    font-size: 17px;
+  .public-home .public-card h2 {
+    font-size: 1rem;
   }
 }
 
-/* دسترسی‌پذیری */
+/* ---------- دسترسی‌پذیری ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .public-primary,
-  .public-admin-link {
-    transition: none;
+  .public-home .public-primary,
+  .public-home .public-admin-link,
+  .public-home .public-tab,
+  .public-home .public-tab::after,
+  .public-home .public-primary::before,
+  .public-home .public-admin-link::before,
+  .public-home .public-primary span,
+  .public-home .public-admin-link span {
+    transition: none !important;
+  }
+
+  .public-home .public-tab-content {
+    animation: none;
   }
 }

@@ -1,10 +1,15 @@
-import { getInitialData } from "../Js/actions";
+import { AuthProvider } from "../components/AuthProvider";
 import UnitAllocationApp from "../components/UnitAllocationApp";
+import { getInitialData } from "../Js/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function Managerpage() {
+export default async function ManagerPage() {
+  const initialData = await getInitialData();
 
-  const result = await getInitialData();
-  return <UnitAllocationApp initialData={result} />;
+  return (
+    <AuthProvider>
+      <UnitAllocationApp initialData={initialData} />
+    </AuthProvider>
+  );
 }

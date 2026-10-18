@@ -1,87 +1,98 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import "../css/publicpage.css";
 
+const TABS = [
+  { id: "user", label: "👤 کاربران " },
+  { id: "admin", label: "🔐 پنل مدیریت" },
+];
+
 export default function WelcomePage() {
+  const [activeTab, setActiveTab] = useState("user");
+
   return (
     <main className="public-home">
-      <header className="public-hero">
-        <div className="public-logo" aria-hidden="true">
-          🏢
+      <section className="public-card glass-panel">
+        {/* هدر باکس */}
+        <header className="public-hero">
+          <div className="public-logo" aria-hidden="true">
+            🏢
+          </div>
+          <h1>سامانه انتخاب واحد پروژه 502 واحدی مسکن ملی شهرستان ملایر</h1>
+          <p>
+            مشاهده وضعیت واحدها، بررسی تخصیص‌ها و دسترسی سریع به امکانات سامانه
+          </p>
+        </header>
+
+        {/* تب‌ها */}
+        <div className="public-tabs" role="tablist" aria-label="نوع دسترسی">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              className={`public-tab ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        <h1>سامانه بررسی وضعیت واحدها</h1>
-
-        <p>
-          مشاهده وضعیت واحدها، بررسی تخصیص‌ها و دسترسی سریع به امکانات سامانه
-        </p>
-      </header>
-
-      <section className="public-card">
-        <div className="public-scan-icon" aria-hidden="true">
-          ⌗
-        </div>
-
-        <h2>به سامانه خوش آمدید</h2>
-
-        <p>برای ادامه، نوع دسترسی خود را انتخاب کنید.</p>
-
-        <div>
-          <h3>👤 کاربر معمولی</h3>
-
-          <p>مشاهده وضعیت واحدها و اسکن بارکد</p>
-
-          <Link
-            href="/Scanner"
-            className="public-primary"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              textDecoration: "none",
-              borderRadius: 12,
-              padding: "14px",
-            }}
+        {/* محتوای تب کاربر معمولی */}
+        {activeTab === "user" && (
+          <div
+            className="public-tab-content"
+            role="tabpanel"
+            id="panel-user"
+            aria-labelledby="tab-user"
           >
-            <span>⌗</span>
-            <span>شروع اسکن</span>
-            <span>←</span>
-          </Link>
-        </div>
+            <div className="public-scan-icon" aria-hidden="true">
+              ⌗
+            </div>
 
-        <div
-          style={{
-            borderTop: "1px solid #e5e7eb",
-            marginTop: 24,
-            paddingTop: 22,
-          }}
-        >
-          <h3>🔐 دسترسی مدیران و ناظران</h3>
+            <h2>به سامانه خوش آمدید</h2>
+            <p>مشاهده وضعیت واحدها و اسکن بارکد</p>
 
-          <p>مدیریت افراد، تخصیص واحدها و اطلاعات سامانه</p>
+            <Link href="/Scanner" className="public-primary">
+              <span>⌗</span>
+              <span>شروع جست و جو</span>
+              <span>←</span>
+            </Link>
+          </div>
+        )}
 
-          <Link
-            href="/Manager"
-            className="public-admin-link"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              padding: 14,
-              textDecoration: "none",
-              marginTop: 12,
-            }}
+        {/* محتوای تب مدیریت */}
+        {activeTab === "admin" && (
+          <div
+            className="public-tab-content"
+            role="tabpanel"
+            id="panel-admin"
+            aria-labelledby="tab-admin"
           >
-            <span>ورود به بخش مدیریت</span>
-            <span>←</span>
-          </Link>
-        </div>
+            <div className="public-scan-icon" aria-hidden="true">
+              🔐
+            </div>
+
+            <h2>دسترسی مدیران و ناظران</h2>
+            <p>مدیریت افراد، تخصیص واحدها و اطلاعات سامانه</p>
+
+            <Link href="/Manager" className="public-admin-link">
+              <span>ورود به بخش مدیریت</span>
+              <span>←</span>
+            </Link>
+          </div>
+        )}
+
+        <footer className="public-footer">
+          سامانه بررسی وضعیت واحدها · دسترسی آسان و سریع
+        </footer>
       </section>
-
-      <footer>سامانه بررسی وضعیت واحدها · دسترسی آسان و سریع</footer>
     </main>
   );
 }

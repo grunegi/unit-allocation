@@ -1,9 +1,16 @@
 "use client";
 
-import UnitStatusScanner from "./UnitStatusScanner";
+import DashboardPlan from "./DashboardPlan";
+import AutoAssignModal from "./AutoAssignModal";
+import DataTab from "./DataTab";
+import PasswordChangeModal from "./PasswordChangeModal";
+import ScanPrintTab from "./ScanPrintTab";
+import { useAuth } from "./AuthProvider";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
+
 import {
   addPersonAction,
   assignUnitAction,
@@ -14,31 +21,51 @@ import {
   releaseSingleUnitAction,
   getAssignmentsHistory,
   updatePersonAction,
+  getDashboardStats,
+  autoAssignBlockAction,
 } from "../Js/actions";
 
-const BUILDINGS = { A1: 40, A2: 40, A3: 40, C1: 40, C2: 40, C3: 40, B1: 22 };
+const BUILDINGS = {
+  A1: 40,
+  A2: 40,
+  A3: 40,
+  A4: 40,
+  A5: 40,
+  A6: 40,
+  B1: 22,
+  B2: 40,
+  B3: 40,
+  B4: 40,
+  C1: 40,
+  C2: 40,
+  C3: 40,
+};
+
 const ALL_UNITS = Object.entries(BUILDINGS).flatMap(([building, count]) =>
   Array.from({ length: count }, (_, index) => `${building}-${index + 1}`),
 );
 
 const TABS = [
+  ["dashboard", "📊 داشبورد و پلان"],
   ["select", "📋 انتخاب واحد"],
   ["filter", "🔍 فیلتر و جستجو"],
-  ["people", "👥 اسامی افراد"],
-  ["scan", "📷 اسکن بارکد"],
-  ["print", "🖨 چاپ بارکدها"],
-  ["data", "💾 داده‌ها"],
+  ["people", "👥 ثبت متقاضی"],
+  ["scan", "📷 اسکن و چاپ QR"],
+  ["data", "💾 گزارش گیری"],
 ];
 
 export default function UnitAllocationApp({ initialData }) {
   const router = useRouter();
+  const {
+    isLoggedIn,
+    currentPassword,
+    login: authLogin,
+    changePassword,
+  } = useAuth();
 
-  const [tab, setTab] = useState("select");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [tab, setTab] = useState("dashboard");
   const [password, setPassword] = useState("");
-  const [qrCodes, setQrCodes] = useState([]);
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
-  const [qrProgress, setQrProgress] = useState(0);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [people, setPeople] = useState(initialData.people || []);
   const [units, setUnits] = useState(initialData.units || []);
   const [assignments, setAssignments] = useState(initialData.assignments || {});
@@ -48,10 +75,19 @@ export default function UnitAllocationApp({ initialData }) {
   const [filterBuilding, setFilterBuilding] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [search, setSearch] = useState("");
-  const [newPhone, setNewPhone] = useState("");
   const [newNationalId, setNewNationalId] = useState("");
-  const [newAddress, setNewAddress] = useState("");
+  const [newScore, setNewScore] = useState("");
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
+
+  const [autoAssignModal, setAutoAssignModal] = useState(null);
+  const [autoAssignBusy, setAutoAssignBusy] = useState(false);
+
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUnits: 0,
+    takenUnits: 0,
+    freeUnits: 0,
+    totalPeople: 0,
+  });
 
   const [peopleSearch, setPeopleSearch] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
@@ -64,8 +100,7 @@ export default function UnitAllocationApp({ initialData }) {
   const [editModal, setEditModal] = useState(null);
   const [editName, setEditName] = useState("");
   const [editNationalId, setEditNationalId] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAddress, setEditAddress] = useState("");
+  const [editScore, setEditScore] = useState("");
   const [editError, setEditError] = useState("");
 
   const [message, setMessage] = useState(
@@ -77,6 +112,21 @@ export default function UnitAllocationApp({ initialData }) {
     setUnits(initialData.units || []);
     setAssignments(initialData.assignments || {});
   }, [initialData]);
+
+  useEffect(() => {
+    if (tab === "dashboard") {
+      getDashboardStats().then((result) => {
+        if (result.ok) {
+          setDashboardStats({
+            totalUnits: result.totalUnits,
+            takenUnits: result.takenUnits,
+            freeUnits: result.freeUnits,
+            totalPeople: result.totalPeople,
+          });
+        }
+      });
+    }
+  }, [tab, assignments]);
 
   const [busy, startTransition] = useTransition();
 
@@ -112,19 +162,28 @@ export default function UnitAllocationApp({ initialData }) {
     return map;
   }, [assignments]);
 
+  const unitsMap = useMemo(() => {
+    const map = {};
+    for (const unit of units || []) {
+      map[unit.code] = unit;
+    }
+    return map;
+  }, [units]);
+
   function notify(text) {
     setMessage(text);
   }
 
   function login(event) {
     event.preventDefault();
-    if (password === "5041") {
-      setIsLoggedIn(true);
-      setMessage("");
-    } else {
-      setMessage("❌ رمز عبور اشتباه است.");
+    const result = authLogin(password);
+    if (!result.ok) {
+      setMessage("❌ " + result.error);
       setPassword("");
+      return;
     }
+    setMessage("");
+    setPassword("");
   }
 
   if (!isLoggedIn) {
@@ -167,7 +226,7 @@ export default function UnitAllocationApp({ initialData }) {
         notify(result?.error || "عملیات ناموفق بود.");
         return;
       }
-      notify("عملیات با موفقیت انجام شد.");
+      notify(result?.message || "عملیات با موفقیت انجام شد.");
       onSuccess?.(result);
       refreshFromServer();
     });
@@ -182,37 +241,27 @@ export default function UnitAllocationApp({ initialData }) {
     if (!/^\d{10}$/.test(newNationalId)) {
       return notify("❌ کد ملی باید ۱۰ رقم عددی باشد.");
     }
-    if (!/^09\d{9}$/.test(newPhone)) {
-      return notify("❌ شماره تماس باید با ۰۹ شروع شود و ۱۱ رقم باشد.");
-    }
-    if (!newAddress.trim() || newAddress.trim().length < 5) {
-      return notify("❌ آدرس باید حداقل ۵ حرف باشد.");
-    }
 
     const formData = new FormData();
     formData.set("name", newName);
-    formData.set("phone", newPhone);
     formData.set("national_id", newNationalId);
-    formData.set("address", newAddress);
+    formData.set("score", newScore || "0");
 
     runAction(
       () => addPersonAction(formData),
       () => {
         setNewName("");
-        setNewPhone("");
         setNewNationalId("");
-        setNewAddress("");
+        setNewScore("");
       },
     );
   }
 
-  // ===== توابع ویرایش =====
   function openEditModal(person) {
     setEditModal(person);
     setEditName(person.name || "");
     setEditNationalId(person.national_id || "");
-    setEditPhone(person.phone || "");
-    setEditAddress(person.address || "");
+    setEditScore(person.score ?? "");
     setEditError("");
   }
 
@@ -231,18 +280,11 @@ export default function UnitAllocationApp({ initialData }) {
     if (!/^\d{10}$/.test(editNationalId)) {
       return setEditError("کد ملی باید ۱۰ رقم عددی باشد.");
     }
-    if (!/^09\d{9}$/.test(editPhone)) {
-      return setEditError("شماره تماس باید با ۰۹ شروع شود و ۱۱ رقم باشد.");
-    }
-    if (!editAddress.trim() || editAddress.trim().length < 5) {
-      return setEditError("آدرس باید حداقل ۵ حرف باشد.");
-    }
 
     const formData = new FormData();
     formData.set("name", editName);
-    formData.set("phone", editPhone);
     formData.set("national_id", editNationalId);
-    formData.set("address", editAddress);
+    formData.set("score", editScore || "0");
 
     runAction(
       () => updatePersonAction(editModal.id, formData),
@@ -296,8 +338,6 @@ export default function UnitAllocationApp({ initialData }) {
         "شماره واحد": h.unit_number ?? "",
         "نام و نام خانوادگی": h.person_name || "",
         "کد ملی": h.person_national_id || "",
-        "شماره تماس": h.person_phone || "",
-        آدرس: h.person_address || "",
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -312,9 +352,7 @@ export default function UnitAllocationApp({ initialData }) {
         { wch: 10 },
         { wch: 10 },
         { wch: 25 },
-        { wch: 12 },
         { wch: 15 },
-        { wch: 40 },
       ];
 
       XLSX.writeFile(workbook, `assignments-history-${Date.now()}.xlsx`);
@@ -329,9 +367,10 @@ export default function UnitAllocationApp({ initialData }) {
   function downloadSampleCSV() {
     const csv =
       "\uFEFF" +
-      "نام,تلفن,کد ملی,آدرس\n" +
-      "علی رضایی,09123456789,1234567890,تهران، خیابان آزادی\n" +
-      "مریم احمدی,09121111111,0987654321,اصفهان، خیابان چهارباغ\n";
+      "نام,کد ملی,امتیاز\n" +
+      "علی رضایی,1234567890,950\n" +
+      "مریم احمدی,0987654321,870\n" +
+      "حسن کریمی,1122334455,920\n";
 
     const url = URL.createObjectURL(
       new Blob([csv], { type: "text/csv;charset=utf-8;" }),
@@ -355,56 +394,6 @@ export default function UnitAllocationApp({ initialData }) {
     a.download = "backup.json";
     a.click();
     URL.revokeObjectURL(url);
-  }
-
-  async function generateQRCodes() {
-    if (isGeneratingQR) return;
-
-    setIsGeneratingQR(true);
-    setQrProgress(0);
-    setQrCodes([]);
-
-    try {
-      const qrModule = await import("qrcode");
-      const QRCode = qrModule.default ?? qrModule;
-      const generated = [];
-      const batchSize = 20;
-
-      for (let start = 0; start < ALL_UNITS.length; start += batchSize) {
-        const batch = ALL_UNITS.slice(start, start + batchSize);
-        const batchResults = await Promise.all(
-          batch.map(async (code) => ({
-            code,
-            src: await QRCode.toDataURL(code, {
-              errorCorrectionLevel: "H",
-              margin: 2,
-              width: 240,
-              color: { dark: "#000000", light: "#FFFFFF" },
-            }),
-          })),
-        );
-        generated.push(...batchResults);
-        setQrProgress(generated.length);
-      }
-
-      setQrCodes(generated);
-      notify(`ساخت ${generated.length} کد QR با موفقیت انجام شد.`);
-    } catch (error) {
-      console.error("QR generation failed:", error);
-      notify(
-        "ساخت QR کدها ناموفق بود. مطمئن شوید کتابخانه qrcode نصب شده است.",
-      );
-    } finally {
-      setIsGeneratingQR(false);
-    }
-  }
-
-  function printBarcodes() {
-    if (!qrCodes.length) {
-      notify("ابتدا روی «ساخت QR کدها» کلیک کنید.");
-      return;
-    }
-    window.print();
   }
 
   function parseCSVLine(line) {
@@ -524,14 +513,155 @@ export default function UnitAllocationApp({ initialData }) {
     }
   }
 
+  function openAutoAssignModal(building) {
+    const buildingUnits = ALL_UNITS.filter((code) =>
+      code.startsWith(`${building}-`),
+    );
+    const freeUnits = buildingUnits.filter((code) => !assignments[code]);
+
+    const assignedPersonIds = new Set(
+      Object.values(assignments).map((a) => a.personId),
+    );
+    const availablePeople = people
+      .filter((p) => !assignedPersonIds.has(p.id))
+      .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    setAutoAssignModal({
+      building,
+      freeCount: freeUnits.length,
+      totalAvailable: availablePeople.length,
+      availablePeople: availablePeople.slice(0, 10),
+      willAssign: Math.min(freeUnits.length, availablePeople.length),
+      freeUnits: freeUnits.slice(0, 10),
+    });
+  }
+
+  function closeAutoAssignModal() {
+    if (autoAssignBusy) return;
+    setAutoAssignModal(null);
+  }
+
+  async function confirmAutoAssign() {
+    if (!autoAssignModal || autoAssignBusy) return;
+
+    setAutoAssignBusy(true);
+    try {
+      const result = await autoAssignBlockAction(autoAssignModal.building);
+      if (result.ok) {
+        notify(result.message);
+        setAutoAssignModal(null);
+        router.refresh();
+      } else {
+        notify("❌ " + result.error);
+      }
+    } catch (error) {
+      notify("❌ خطا: " + error.message);
+    } finally {
+      setAutoAssignBusy(false);
+    }
+  }
+
+  async function handlePasswordChange(newPassword) {
+    const result = await changePassword(newPassword);
+    if (!result.ok) {
+      notify("❌ " + result.error);
+      return;
+    }
+    setShowPasswordModal(false);
+    notify("✅ رمز عبور تغییر یافت.");
+  }
+
+  function renderPartColumn(partSide, partName, partCodes, interactive = true) {
+    if (!partCodes.length) return null;
+
+    const floorGroups = {};
+    partCodes.forEach((code) => {
+      const floor = unitsMap[code]?.floor || 1;
+      if (!floorGroups[floor]) floorGroups[floor] = [];
+      floorGroups[floor].push(code);
+    });
+
+    const partClass = partSide === "راست" ? "part-right" : "part-left";
+    const icon = partSide === "راست" ? "➡️" : "⬅️";
+    const floorNames = ["اول", "دوم", "سوم", "چهارم", "پنجم"];
+
+    const sortedFloors = Object.keys(floorGroups).sort((a, b) => a - b);
+
+    return (
+      <div className={`part-column ${partClass}`}>
+        <div className="part-title">
+          {icon} پارت {partName} ({partSide})
+        </div>
+        {sortedFloors.map((floor) => {
+          const floorName = floorNames[floor - 1] || `طبقه ${floor}`;
+          return (
+            <div className="floor-group" key={floor}>
+              <div className="floor-title">طبقه {floorName}</div>
+              <div className="unit-grid">
+                {floorGroups[floor].map((code) => (
+                  <button
+                    key={code}
+                    className={`unit ${assignments[code] ? "taken" : ""}`}
+                    onClick={() => setUnitCode(code)}
+                  >
+                    <strong>{code}</strong>
+                    <small>{assignments[code]?.name || "آزاد"}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <main className="container">
       <header className="card">
-        <h1>🏢 سیستم تخصیص واحد</h1>
-        <p>
-          واحدها: {ALL_UNITS.length} | تخصیص‌یافته: {takenCount} | آزاد:{" "}
-          {ALL_UNITS.length - takenCount}
-        </p>
+        <div className="header-top">
+          <h1>🏢 سیستم تخصیص واحد (پنل مدیریت سایت)</h1>
+
+          <div className="header-actions">
+            <button
+              type="button"
+              className="password-change-btn"
+              onClick={() => setShowPasswordModal(true)}
+              title="تغییر رمز عبور"
+            >
+              🔑 تغییر رمز
+            </button>
+
+            <Link href="/" className="logout-btn" title="خروج به صفحه اصلی">
+              🚪 خروج
+            </Link>
+          </div>
+        </div>
+
+        <div className="dashboard-stats-compact">
+          <div className="stat-compact stat-compact-total">
+            <span className="stat-compact-icon">🏢</span>
+            <span className="stat-compact-label">کل واحدها</span>
+            <span className="stat-compact-value">{ALL_UNITS.length}</span>
+          </div>
+          <div className="stat-compact stat-compact-taken">
+            <span className="stat-compact-icon">✅</span>
+            <span className="stat-compact-label">تخصیص‌یافته</span>
+            <span className="stat-compact-value">{takenCount}</span>
+          </div>
+          <div className="stat-compact stat-compact-free">
+            <span className="stat-compact-icon">⚪</span>
+            <span className="stat-compact-label">آزاد</span>
+            <span className="stat-compact-value">
+              {ALL_UNITS.length - takenCount}
+            </span>
+          </div>
+          <div className="stat-compact stat-compact-people">
+            <span className="stat-compact-icon">👥</span>
+            <span className="stat-compact-label">متقاضیان</span>
+            <span className="stat-compact-value">{people.length}</span>
+          </div>
+        </div>
       </header>
       {message && (
         <div className="notice" role="status">
@@ -552,6 +682,30 @@ export default function UnitAllocationApp({ initialData }) {
           </button>
         ))}
       </nav>
+
+      {tab === "dashboard" && (
+        <section className="card">
+          <DashboardPlan
+            stats={dashboardStats}
+            onGoToBlock={(block) => {
+              const allCollapsed = {};
+              Object.keys(BUILDINGS).forEach((b) => {
+                allCollapsed[b] = b !== block;
+              });
+              setCollapsedBuildings(allCollapsed);
+              setTab("select");
+
+              setTimeout(() => {
+                const el = document.getElementById(`building-${block}`);
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }, 150);
+            }}
+          />
+        </section>
+      )}
+
       {tab === "select" && (
         <section className="card">
           <h2>ثبت تخصیص</h2>
@@ -567,7 +721,8 @@ export default function UnitAllocationApp({ initialData }) {
               return (
                 <option key={p.id} value={p.id}>
                   {p.name}
-                  {count > 0 ? ` (${count} واحد)` : ""}
+                  {p.score ? ` (امتیاز: ${p.score})` : ""}
+                  {count > 0 ? ` - ${count} واحد` : ""}
                 </option>
               );
             })}
@@ -606,41 +761,75 @@ export default function UnitAllocationApp({ initialData }) {
             const isCollapsed = collapsedBuildings[building];
 
             return (
-              <div className="building-section" key={building}>
-                <button
-                  type="button"
-                  className="building-header"
-                  onClick={() =>
-                    setCollapsedBuildings((prev) => ({
-                      ...prev,
-                      [building]: !prev[building],
-                    }))
-                  }
-                  aria-expanded={!isCollapsed}
-                >
-                  <span className="building-title">
+              <div
+                className="building-section"
+                key={building}
+                id={`building-${building}`}
+              >
+                <div className="building-header">
+                  <div
+                    className="building-title"
+                    onClick={() =>
+                      setCollapsedBuildings((prev) => ({
+                        ...prev,
+                        [building]: !prev[building],
+                      }))
+                    }
+                    style={{ cursor: "pointer", flex: 1 }}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!isCollapsed}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setCollapsedBuildings((prev) => ({
+                          ...prev,
+                          [building]: !prev[building],
+                        }));
+                      }
+                    }}
+                  >
                     <span className="building-caret">
                       {isCollapsed ? "▶" : "▼"}
                     </span>
                     🏢 {building}
-                  </span>
-                  <span className="building-stats">
-                    {takenInBuilding} از {buildingUnits.length} تخصیص‌یافته
-                  </span>
-                </button>
+                  </div>
+
+                  <div className="building-header-right">
+                    <span className="building-stats">
+                      {takenInBuilding} از {buildingUnits.length} تخصیص‌یافته
+                    </span>
+
+                    <button
+                      type="button"
+                      className="auto-assign-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAutoAssignModal(building);
+                      }}
+                      title="تخصیص خودکار"
+                    >
+                      🎯
+                    </button>
+                  </div>
+                </div>
 
                 {!isCollapsed && (
-                  <div className="unit-grid">
-                    {buildingUnits.map((code) => (
-                      <button
-                        key={code}
-                        className={`unit ${assignments[code] ? "taken" : ""}`}
-                        onClick={() => setUnitCode(code)}
-                      >
-                        <strong>{code}</strong>
-                        <small>{assignments[code]?.name || "آزاد"}</small>
-                      </button>
-                    ))}
+                  <div className="parts-container">
+                    {renderPartColumn(
+                      "راست",
+                      "شرقی",
+                      buildingUnits.filter(
+                        (code) => unitsMap[code]?.part === "راست",
+                      ),
+                    )}
+                    {renderPartColumn(
+                      "چپ",
+                      "غربی",
+                      buildingUnits.filter(
+                        (code) => unitsMap[code]?.part === "چپ",
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -648,6 +837,7 @@ export default function UnitAllocationApp({ initialData }) {
           })}
         </section>
       )}
+
       {tab === "filter" && (
         <section className="card">
           <h2>🔍 جستجو و فیلتر</h2>
@@ -676,18 +866,12 @@ export default function UnitAllocationApp({ initialData }) {
             placeholder="جستجوی کد واحد یا نام ساکن..."
             className="search-input"
           />
-          <p className="stats">
-            کل: {ALL_UNITS.length} | انتخاب‌شده: {takenCount} | آزاد:{" "}
-            {ALL_UNITS.length - takenCount} | نتایج: {filteredUnits.length}
-          </p>
 
-          {/* گرید گروه‌بندی‌شده بر اساس ساختمان */}
           {(() => {
             if (!filteredUnits.length) {
               return <p className="stats">هیچ نتیجه‌ای پیدا نشد.</p>;
             }
 
-            // گروه‌بندی نتایج بر اساس ساختمان
             const grouped = {};
             for (const code of filteredUnits) {
               const building = code.split("-")[0];
@@ -702,41 +886,52 @@ export default function UnitAllocationApp({ initialData }) {
               const collapseKey = `filter-${building}`;
               const isCollapsed = collapsedBuildings[collapseKey];
 
+              const rightPart = units.filter(
+                (code) => unitsMap[code]?.part === "راست",
+              );
+              const leftPart = units.filter(
+                (code) => unitsMap[code]?.part === "چپ",
+              );
+
               return (
                 <div className="building-section" key={building}>
-                  <button
-                    type="button"
-                    className="building-header"
-                    onClick={() =>
-                      setCollapsedBuildings((prev) => ({
-                        ...prev,
-                        [collapseKey]: !prev[collapseKey],
-                      }))
-                    }
-                    aria-expanded={!isCollapsed}
-                  >
-                    <span className="building-title">
+                  <div className="building-header">
+                    <div
+                      className="building-title"
+                      onClick={() =>
+                        setCollapsedBuildings((prev) => ({
+                          ...prev,
+                          [collapseKey]: !prev[collapseKey],
+                        }))
+                      }
+                      style={{ cursor: "pointer", flex: 1 }}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={!isCollapsed}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setCollapsedBuildings((prev) => ({
+                            ...prev,
+                            [collapseKey]: !prev[collapseKey],
+                          }));
+                        }
+                      }}
+                    >
                       <span className="building-caret">
                         {isCollapsed ? "▶" : "▼"}
                       </span>
                       🏢 {building}
-                    </span>
+                    </div>
                     <span className="building-stats">
                       {takenInBuilding} از {units.length} تخصیص‌یافته
                     </span>
-                  </button>
+                  </div>
 
                   {!isCollapsed && (
-                    <div className="unit-grid">
-                      {units.map((code) => (
-                        <div
-                          className={`unit ${assignments[code] ? "taken" : ""}`}
-                          key={code}
-                        >
-                          <strong>{code}</strong>
-                          <small>{assignments[code]?.name || "آزاد"}</small>
-                        </div>
-                      ))}
+                    <div className="parts-container">
+                      {renderPartColumn("راست", "شرقی", rightPart, false)}
+                      {renderPartColumn("چپ", "غربی", leftPart, false)}
                     </div>
                   )}
                 </div>
@@ -760,7 +955,7 @@ export default function UnitAllocationApp({ initialData }) {
             </div>
 
             <div className="form-row">
-              <label htmlFor="new-national-id">کد ملی</label>
+              <label htmlFor="new-national-id">کد ملی *</label>
               <input
                 id="new-national-id"
                 value={newNationalId}
@@ -772,24 +967,14 @@ export default function UnitAllocationApp({ initialData }) {
             </div>
 
             <div className="form-row">
-              <label htmlFor="new-phone">شماره تماس</label>
+              <label htmlFor="new-score">امتیاز *</label>
               <input
-                id="new-phone"
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-                placeholder="۰۹xxxxxxxxx"
-                inputMode="tel"
-              />
-            </div>
-
-            <div className="form-row">
-              <label htmlFor="new-address">آدرس</label>
-              <textarea
-                id="new-address"
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                placeholder="آدرس کامل"
-                rows={2}
+                id="new-score"
+                type="number"
+                value={newScore}
+                onChange={(e) => setNewScore(e.target.value)}
+                placeholder="مثلاً 950"
+                inputMode="numeric"
               />
             </div>
 
@@ -816,7 +1001,7 @@ export default function UnitAllocationApp({ initialData }) {
           <input
             value={peopleSearch}
             onChange={(e) => setPeopleSearch(e.target.value)}
-            placeholder="🔍 جستجو با نام، کد ملی، تلفن یا آدرس..."
+            placeholder="🔍 جستجو با نام یا کد ملی..."
             className="search-input"
           />
 
@@ -825,10 +1010,7 @@ export default function UnitAllocationApp({ initialData }) {
             const filteredPeople = people.filter((p) => {
               if (!q) return true;
               return (
-                p.name?.toLowerCase().includes(q) ||
-                p.national_id?.includes(q) ||
-                p.phone?.includes(q) ||
-                p.address?.toLowerCase().includes(q)
+                p.name?.toLowerCase().includes(q) || p.national_id?.includes(q)
               );
             });
 
@@ -881,8 +1063,7 @@ export default function UnitAllocationApp({ initialData }) {
                     </strong>
                     <div className="person-meta">
                       {p.national_id && <span>🆔 {p.national_id}</span>}
-                      {p.phone && <span>📞 {p.phone}</span>}
-                      {p.address && <span>📍 {p.address}</span>}
+                      {p.score != null && <span>⭐ امتیاز: {p.score}</span>}
                     </div>
                   </div>
                   <div className="person-actions">
@@ -908,19 +1089,11 @@ export default function UnitAllocationApp({ initialData }) {
           })()}
         </section>
       )}
+
       {tab === "scan" && (
-        <section className="card">
-          <h2>📷 اسکن و بررسی واحد</h2>
-          <p>
-            می‌توانید QR را اسکن کنید، کد را تایپ کنید، یا از لیست انتخاب کنید.
-          </p>
-          <UnitStatusScanner
-            assignments={assignments}
-            people={people}
-            showPersonInfo={true}
-          />
-        </section>
+        <ScanPrintTab assignments={assignments} people={people} />
       )}
+
       {tab === "print" && (
         <section className="card">
           <h2>🖨 ساخت و چاپ QR کد واحدها</h2>
@@ -988,29 +1161,22 @@ export default function UnitAllocationApp({ initialData }) {
           </div>
         </section>
       )}
+
       {tab === "data" && (
-        <section className="card">
-          <h2>💾 پشتیبان‌گیری</h2>
-          <div className="actions">
-            <button onClick={exportJSON}>📤 خروجی JSON</button>
-            <button onClick={exportCSV}>📄 خروجی به صورت Excel</button>
-          </div>
-          <button
-            className="danger"
-            disabled={busy}
-            onClick={() => {
-              if (
-                window.confirm("همه داده‌ها حذف شوند؟") &&
-                window.confirm("این عملیات برگشت‌پذیر نیست. مطمئنید؟")
-              )
-                runAction(() => resetAllAction());
-            }}
-          >
-            🗑 پاک کردن همه داده‌ها
-          </button>
-        </section>
+        <DataTab
+          onExportJSON={exportJSON}
+          onExportCSV={exportCSV}
+          onResetAll={() => {
+            if (
+              window.confirm("همه داده‌ها حذف شوند؟") &&
+              window.confirm("این عملیات برگشت‌پذیر نیست. مطمئنید؟")
+            )
+              runAction(() => resetAllAction());
+          }}
+          busy={busy}
+        />
       )}
-      {/* ===== Modal ورود گروهی ===== */}
+
       {showImportModal && (
         <div
           className="modal-overlay"
@@ -1053,12 +1219,12 @@ export default function UnitAllocationApp({ initialData }) {
               {importTab === "text" ? (
                 <>
                   <p className="help-text">
-                    هر خط یک نفر با فرمت: <code>نام, تلفن, کد ملی, آدرس</code>
+                    هر خط یک نفر با فرمت: <code>نام, کد ملی, امتیاز</code>
                   </p>
                   <textarea
                     value={importText}
                     onChange={(e) => setImportText(e.target.value)}
-                    placeholder={`علی رضایی, 09123456789, 1234567890, تهران، خیابان آزادی\nمریم احمدی, 09121111111, 0987654321, اصفهان، خیابان چهارباغ`}
+                    placeholder={`علی رضایی, 1234567890, 950\nمریم احمدی, 0987654321, 870\nحسن کریمی, 1122334455, 920`}
                     rows={10}
                     dir="rtl"
                   />
@@ -1066,7 +1232,7 @@ export default function UnitAllocationApp({ initialData }) {
               ) : (
                 <>
                   <p className="help-text">
-                    فایل CSV با فرمت: <code>نام, تلفن, کد ملی, آدرس</code>
+                    فایل CSV با فرمت: <code>نام, کد ملی, امتیاز</code>
                   </p>
                   <input
                     type="file"
@@ -1110,7 +1276,7 @@ export default function UnitAllocationApp({ initialData }) {
           </div>
         </div>
       )}
-      {/* ===== Modal ویرایش فرد ===== */}
+
       {editModal && (
         <div className="modal-overlay" onClick={closeEditModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -1138,7 +1304,7 @@ export default function UnitAllocationApp({ initialData }) {
                 </div>
 
                 <div className="form-row">
-                  <label htmlFor="edit-national-id">کد ملی</label>
+                  <label htmlFor="edit-national-id">کد ملی *</label>
                   <input
                     id="edit-national-id"
                     value={editNationalId}
@@ -1149,22 +1315,13 @@ export default function UnitAllocationApp({ initialData }) {
                 </div>
 
                 <div className="form-row">
-                  <label htmlFor="edit-phone">شماره تماس</label>
+                  <label htmlFor="edit-score">امتیاز *</label>
                   <input
-                    id="edit-phone"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    inputMode="tel"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <label htmlFor="edit-address">آدرس</label>
-                  <textarea
-                    id="edit-address"
-                    value={editAddress}
-                    onChange={(e) => setEditAddress(e.target.value)}
-                    rows={2}
+                    id="edit-score"
+                    type="number"
+                    value={editScore}
+                    onChange={(e) => setEditScore(e.target.value)}
+                    inputMode="numeric"
                   />
                 </div>
 
@@ -1186,7 +1343,21 @@ export default function UnitAllocationApp({ initialData }) {
             </form>
           </div>
         </div>
-      )}{" "}
+      )}
+
+      <PasswordChangeModal
+        open={showPasswordModal}
+        currentPassword={currentPassword}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={handlePasswordChange}
+      />
+
+      <AutoAssignModal
+        data={autoAssignModal}
+        busy={autoAssignBusy}
+        onConfirm={confirmAutoAssign}
+        onClose={closeAutoAssignModal}
+      />
     </main>
   );
 }
