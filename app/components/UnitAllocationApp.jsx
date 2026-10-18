@@ -1,7 +1,6 @@
 "use client";
 
 import DashboardPlan from "./DashboardPlan";
-import AutoAssignModal from "./AutoAssignModal";
 import DataTab from "./DataTab";
 import PasswordChangeModal from "./PasswordChangeModal";
 import ScanPrintTab from "./ScanPrintTab";
@@ -23,7 +22,6 @@ import {
   getAssignmentsHistory,
   updatePersonAction,
   getDashboardStats,
-  autoAssignBlockAction,
 } from "../Js/actions";
 
 const BUILDINGS = {
@@ -80,9 +78,6 @@ export default function UnitAllocationApp({ initialData }) {
   const [newScore, setNewScore] = useState("");
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
-
-  const [autoAssignModal, setAutoAssignModal] = useState(null);
-  const [autoAssignBusy, setAutoAssignBusy] = useState(false);
 
   const [dashboardStats, setDashboardStats] = useState({
     totalUnits: 0,
@@ -539,54 +534,6 @@ export default function UnitAllocationApp({ initialData }) {
     }
   }
 
-  function openAutoAssignModal(building) {
-    const buildingUnits = ALL_UNITS.filter((code) =>
-      code.startsWith(`${building}-`),
-    );
-    const freeUnits = buildingUnits.filter((code) => !assignments[code]);
-
-    const assignedPersonIds = new Set(
-      Object.values(assignments).map((a) => a.personId),
-    );
-    const availablePeople = people
-      .filter((p) => !assignedPersonIds.has(p.id))
-      .sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    setAutoAssignModal({
-      building,
-      freeCount: freeUnits.length,
-      totalAvailable: availablePeople.length,
-      availablePeople: availablePeople.slice(0, 10),
-      willAssign: Math.min(freeUnits.length, availablePeople.length),
-      freeUnits: freeUnits.slice(0, 10),
-    });
-  }
-
-  function closeAutoAssignModal() {
-    if (autoAssignBusy) return;
-    setAutoAssignModal(null);
-  }
-
-  async function confirmAutoAssign() {
-    if (!autoAssignModal || autoAssignBusy) return;
-
-    setAutoAssignBusy(true);
-    try {
-      const result = await autoAssignBlockAction(autoAssignModal.building);
-      if (result.ok) {
-        notify(result.message);
-        setAutoAssignModal(null);
-        router.refresh();
-      } else {
-        notify("❌ " + result.error);
-      }
-    } catch (error) {
-      notify("❌ خطا: " + error.message);
-    } finally {
-      setAutoAssignBusy(false);
-    }
-  }
-
   async function handlePasswordChange(newPassword) {
     const result = await changePassword(newPassword);
     if (!result.ok) {
@@ -825,18 +772,6 @@ export default function UnitAllocationApp({ initialData }) {
                     <span className="building-stats">
                       {takenInBuilding} از {buildingUnits.length} تخصیص‌یافته
                     </span>
-
-                    <button
-                      type="button"
-                      className="auto-assign-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAutoAssignModal(building);
-                      }}
-                      title="تخصیص خودکار"
-                    >
-                      🎯
-                    </button>
                   </div>
                 </div>
 
@@ -1390,13 +1325,6 @@ export default function UnitAllocationApp({ initialData }) {
           cb?.();
         }}
         onCancel={() => setConfirmDialog(null)}
-      />
-
-      <AutoAssignModal
-        data={autoAssignModal}
-        busy={autoAssignBusy}
-        onConfirm={confirmAutoAssign}
-        onClose={closeAutoAssignModal}
       />
     </main>
   );

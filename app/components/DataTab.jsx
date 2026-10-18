@@ -83,7 +83,6 @@ export default function DataTab({
             >
               <option value="all">همه عملیات</option>
               <option value="success">تخصیص واحد</option>
-              <option value="auto">تخصیص خودکار</option>
               <option value="warning">آزادسازی</option>
             </select>
 
