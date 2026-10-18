@@ -171,7 +171,6 @@ export default function DataTab({
 function getActionInfo(action) {
   const actionMap = {
     "تخصیص واحد": { icon: "✅", label: "تخصیص واحد", color: "success" },
-    "تخصیص خودکار": { icon: "🎯", label: "تخصیص خودکار", color: "auto" },
     "آزاد سازی واحد": { icon: "🔓", label: "آزادسازی واحد", color: "warning" },
     "آزادسازی واحد": { icon: "🔓", label: "آزادسازی واحد", color: "warning" },
   };
