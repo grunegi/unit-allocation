@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import "../css/clearbtn.css";
+
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { getRecentLogs } from "../Js/actions";
 
 export default function DataTab({
@@ -8,6 +10,8 @@ export default function DataTab({
   onExportCSV,
   onResetAll,
   busy,
+  logsClearedAt,
+  setLogsClearedAt,
 }) {
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -15,7 +19,7 @@ export default function DataTab({
   const [logsAutoRefresh, setLogsAutoRefresh] = useState(true);
   const [logsFilter, setLogsFilter] = useState("all");
 
-  async function loadLogs() {
+  const loadLogs = useCallback(async () => {
     setLogsLoading(true);
     setLogsError("");
     try {
@@ -30,25 +34,40 @@ export default function DataTab({
     } finally {
       setLogsLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [loadLogs]);
 
   useEffect(() => {
     if (!logsAutoRefresh) return;
     const interval = setInterval(loadLogs, 20000);
     return () => clearInterval(interval);
-  }, [logsAutoRefresh]);
+  }, [logsAutoRefresh, loadLogs]);
 
   const filteredLogs = useMemo(() => {
-    if (logsFilter === "all") return logs;
-    return logs.filter((log) => {
-      const info = getActionInfo(log.action);
-      return info.color === logsFilter;
-    });
-  }, [logs, logsFilter]);
+    let result = logs;
+
+    if (logsClearedAt) {
+      result = result.filter(
+        (log) => new Date(log.created_at) > new Date(logsClearedAt),
+      );
+    }
+
+    if (logsFilter !== "all") {
+      result = result.filter((log) => {
+        const info = getActionInfo(log.action);
+        return info.color === logsFilter;
+      });
+    }
+
+    return result;
+  }, [logs, logsFilter, logsClearedAt]);
+
+  function clearLogsDisplay() {
+    setLogsClearedAt(new Date().toISOString());
+  }
 
   return (
     <section className="card">
@@ -72,6 +91,18 @@ export default function DataTab({
               <span className="live-indicator">
                 <span className="live-dot" />
                 زنده
+              </span>
+            )}
+            {logsClearedAt && (
+              <span
+                className="live-indicator"
+                style={{
+                  color: "#fcd34d",
+                  background: "rgba(245, 158, 11, 0.12)",
+                  borderColor: "rgba(245, 158, 11, 0.3)",
+                }}
+              >
+                🧹 فقط لاگ‌های جدید
               </span>
             )}
           </h3>
@@ -102,6 +133,16 @@ export default function DataTab({
             >
               {logsLoading ? "⏳" : "🔄"}
             </button>
+
+            <button
+              type="button"
+              className="gray small"
+              onClick={clearLogsDisplay}
+              disabled={!filteredLogs.length}
+              title="پاک کردن نمایش (لاگ‌ها در دیتابیس می‌مونن)"
+            >
+              🧹
+            </button>
           </div>
         </div>
 
@@ -113,17 +154,24 @@ export default function DataTab({
 
         {logsLoading && logs.length === 0 ? (
           <p className="stats">⏳ در حال بارگذاری...</p>
-        ) : filteredLogs.length === 0 ? (
+        ) : logsClearedAt && filteredLogs.length === 0 ? (
+          <p className="stats">
+            🧹 لاگ‌های قبلی پاک شدند. لاگ جدیدی ثبت نشده است.
+            <br />
+            <small style={{ color: "#94a3b8" }}>
+              برای مشاهده‌ی لاگ‌های قبلی، از «📄 خروجی Excel» استفاده کنید.
+            </small>
+          </p>
+        ) : logs.length === 0 ? (
           <p className="stats">هیچ لاگی برای نمایش وجود ندارد.</p>
+        ) : filteredLogs.length === 0 ? (
+          <p className="stats">هیچ لاگی با این فیلتر پیدا نشد.</p>
         ) : (
           <div className="logs-list">
             {filteredLogs.map((log) => {
               const info = getActionInfo(log.action);
               return (
-                <div
-                  className={`log-item log-item-${info.color}`}
-                  key={log.id}
-                >
+                <div className={`log-item log-item-${info.color}`} key={log.id}>
                   <div className="log-icon">{info.icon}</div>
                   <div className="log-content">
                     <div className="log-action">{info.label}</div>
@@ -152,7 +200,10 @@ export default function DataTab({
 
         {filteredLogs.length > 0 && (
           <p className="logs-footer">
-            نمایش {filteredLogs.length} از {logs.length} لاگ آخر
+            نمایش {filteredLogs.length} لاگ
+            {logsClearedAt
+              ? " (بعد از پاک کردن)"
+              : ` از ${logs.length} لاگ آخر`}
           </p>
         )}
       </div>

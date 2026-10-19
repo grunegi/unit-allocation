@@ -1,0 +1,19 @@
+.logs-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #1e2229;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+}
+
+.logs-empty-state p {
+  margin: 0 0 8px;
+  color: var(--text-soft, #cbd5e1);
+  font-size: 0.95rem;
+}
+
+.logs-empty-hint {
+  font-size: 0.82rem !important;
+  color: var(--text-muted, #94a3b8) !important;
+  margin-bottom: 16px !important;
+}

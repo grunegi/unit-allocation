@@ -79,6 +79,8 @@ export default function UnitAllocationApp({ initialData }) {
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
 
+  const [logsClearedAt, setLogsClearedAt] = useState(null);
+
   const [dashboardStats, setDashboardStats] = useState({
     totalUnits: 0,
     takenUnits: 0,
@@ -1003,15 +1005,17 @@ export default function UnitAllocationApp({ initialData }) {
                                 disabled={busy}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (
-                                    window.confirm(
-                                      `واحد «${unit}» از «${p.name}» آزاد شود؟`,
-                                    )
-                                  ) {
-                                    runAction(() =>
-                                      releaseSingleUnitAction(unit),
-                                    );
-                                  }
+                                  setConfirmDialog({
+                                    title: "🔓 آزادسازی واحد",
+                                    message: `آیا واحد «${unit}» از «${p.name}» آزاد شود؟`,
+                                    danger: false,
+                                    confirmText: "🔓 آزادسازی",
+                                    onConfirm: () => {
+                                      runAction(() =>
+                                        releaseSingleUnitAction(unit),
+                                      );
+                                    },
+                                  });
                                 }}
                                 title="آزادسازی این واحد"
                               >
@@ -1135,9 +1139,10 @@ export default function UnitAllocationApp({ initialData }) {
               runAction(() => resetAllAction());
           }}
           busy={busy}
+          logsClearedAt={logsClearedAt}
+          setLogsClearedAt={setLogsClearedAt}
         />
       )}
-
       {showImportModal && (
         <div
           className="modal-overlay"
