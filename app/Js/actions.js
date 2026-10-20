@@ -722,3 +722,151 @@ export async function updateAdminPassword(newPassword) {
     return { ok: false, error: error.message || "تغییر رمز ناموفق بود." };
   }
 }
+
+
+
+
+// ============================================================
+// خلاصه تخصیص واحدها به تفکیک بلوک (مخصوص اسکنر)
+// ============================================================
+
+export async function getUnitsSummaryByBuilding() {
+  try {
+    const supabase = createServerSupabase();
+
+    const { data, error } = await supabase
+      .from("units")
+      .select("code,building,number,person_id")
+      .order("building")
+      .order("number");
+
+    if (error) throw error;
+
+    const buildings = {};   // { A1: 40, B1: 22, ... }
+    const takenByBuilding = {}; // { A1: ["A1-3", "A1-15"], ... }
+
+    for (const unit of data || []) {
+      if (!unit.building) continue;
+
+      buildings[unit.building] = (buildings[unit.building] || 0) + 1;
+
+      if (unit.person_id) {
+        if (!takenByBuilding[unit.building]) {
+          takenByBuilding[unit.building] = [];
+        }
+        takenByBuilding[unit.building].push(unit.code);
+      }
+    }
+
+    const summary = Object.entries(buildings).map(([building, total]) => {
+      const takenUnits = takenByBuilding[building] || [];
+      return {
+        building,
+        total,
+        taken: takenUnits.length,
+        free: total - takenUnits.length,
+        takenUnits,
+      };
+    });
+
+    return {
+      ok: true,
+      buildings,
+      summary,
+      totals: {
+        total: summary.reduce((s, r) => s + r.total, 0),
+        taken: summary.reduce((s, r) => s + r.taken, 0),
+        free: summary.reduce((s, r) => s + r.free, 0),
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message,
+      buildings: {},
+      summary: [],
+      totals: { total: 0, taken: 0, free: 0 },
+    };
+  }
+}
+
+
+
+// ============================================================
+// بکاپ کامل JSON برای بازیابی
+// ============================================================
+
+export async function exportFullBackup() {
+  try {
+    const supabase = createServerSupabase();
+
+    const [people, units, history, settings] = await Promise.all([
+      supabase.from("people").select("*").order("created_at"),
+      supabase.from("units").select("*").order("building").order("number"),
+      supabase.from("assignments_history").select("*").order("created_at"),
+      supabase.from("settings").select("*"),
+    ]);
+
+    if (people.error) throw people.error;
+    if (units.error) throw units.error;
+    if (history.error) throw history.error;
+    if (settings.error) throw settings.error;
+
+    return {
+      ok: true,
+      data: {
+        meta: {
+          version: "1.0",
+          exported_at: new Date().toISOString(),
+          total_units: units.data?.length || 0,
+          total_people: people.data?.length || 0,
+          total_history: history.data?.length || 0,
+          total_settings: settings.data?.length || 0,
+          total_assigned: (units.data || []).filter((u) => u.person_id).length,
+        },
+        tables: {
+          people: people.data || [],
+          units: units.data || [],
+          assignments_history: history.data || [],
+          settings: settings.data || [],
+        },
+      },
+    };
+  } catch (error) {
+    return { ok: false, error: error.message || "بکاپ‌گیری ناموفق بود." };
+  }
+}
+
+
+
+export async function getBuildingsWithUnitsMeta() {
+  try {
+    const supabase = createServerSupabase();
+    const { data, error } = await supabase
+      .from("units")
+      .select("code, building, number, part, floor, person_id")
+      .order("building")
+      .order("number");
+
+    if (error) throw error;
+
+    const unitsByBuilding = {};
+    for (const unit of data || []) {
+      if (!unit.building) continue;
+      if (!unitsByBuilding[unit.building]) {
+        unitsByBuilding[unit.building] = [];
+      }
+      unitsByBuilding[unit.building].push({
+        code: unit.code,
+        number: unit.number,
+        part: unit.part,
+        floor: unit.floor,
+        isTaken: !!unit.person_id,
+      });
+    }
+
+    return { ok: true, unitsByBuilding };
+  } catch (error) {
+    return { ok: false, error: error.message, unitsByBuilding: {} };
+  }
+}

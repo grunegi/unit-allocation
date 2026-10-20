@@ -1,0 +1,243 @@
+/* ============================================
+   خلاصه تخصیص بلوک‌ها — کارت‌های مدرن
+============================================ */
+
+.block-summary {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.summary-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(79, 70, 229, 0.15);
+  color: #c7d2fe;
+  border: 1px solid rgba(165, 180, 252, 0.35);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.summary-toggle:hover:not(:disabled) {
+  background: rgba(79, 70, 229, 0.25);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.summary-toggle:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* لیست بلوک‌ها */
+.block-summary-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* هدر بلوک — نوار وظیفه */
+.building-header.status-empty,
+.building-header.status-normal,
+.building-header.status-warning,
+.building-header.status-full {
+  transition: all 0.2s ease;
+  border-right: 3px solid transparent;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.building-header.status-empty {
+  border-right-color: #64748b;
+}
+
+.building-header.status-normal {
+  border-right-color: #10b981;
+}
+
+.building-header.status-warning {
+  border-right-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.building-header.status-warning:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.building-header.status-full {
+  border-right-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.building-header.status-full:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.building-header.status-empty:hover,
+.building-header.status-normal:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* درصد در هدر */
+.building-percent {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.building-percent.percent-empty {
+  color: #94a3b8;
+}
+
+.building-percent.percent-normal {
+  color: #6ee7b7;
+}
+
+.building-percent.percent-warning {
+  color: #fcd34d;
+}
+
+.building-percent.percent-full {
+  color: #f87171;
+}
+
+/* نوار پیشرفت */
+.block-progress {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+
+.block-progress-fill {
+  height: 100%;
+  transition: width 0.5s ease, background 0.3s ease;
+}
+
+.block-progress-fill.fill-empty {
+  background: linear-gradient(90deg, #475569, #64748b);
+}
+
+.block-progress-fill.fill-normal {
+  background: linear-gradient(90deg, #10b981, #34d399);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.block-progress-fill.fill-warning {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+.block-progress-fill.fill-full {
+  background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.8);
+  animation: fullPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes fullPulse {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 1);
+  }
+}
+
+/* محتوای باز شده (پارت‌ها) */
+.block-summary-list .parts-container {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 8px 8px;
+  margin-top: 4px;
+}
+
+/* واحدهای داخل خلاصه */
+.block-summary-list .unit {
+  cursor: default;
+  font-size: 0.75rem;
+  padding: 4px;
+  min-height: 44px;
+}
+
+.block-summary-list .unit strong {
+  font-size: 0.72rem;
+}
+
+.block-summary-list .unit small {
+  font-size: 0.65rem;
+}
+
+.block-summary-list .unit:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* آمار کلی پایین */
+.block-total-footer {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(165, 180, 252, 0.25);
+  border-radius: 12px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.block-total-footer strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.block-total-footer .taken-cell {
+  color: #6ee7b7;
+}
+
+.block-total-footer .free-cell {
+  color: #fcd34d;
+}
+
+/* موبایل */
+@media (max-width: 600px) {
+  .block-summary-list .unit {
+    font-size: 0.68rem;
+    padding: 3px;
+    min-height: 40px;
+  }
+
+  .building-percent {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+  }
+
+  .building-header.status-empty,
+  .building-header.status-normal,
+  .building-header.status-warning,
+  .building-header.status-full {
+    padding: 10px 12px;
+  }
+
+  .block-total-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+  }
+}

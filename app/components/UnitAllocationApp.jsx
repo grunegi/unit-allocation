@@ -5,6 +5,7 @@ import DataTab from "./DataTab";
 import PasswordChangeModal from "./PasswordChangeModal";
 import ScanPrintTab from "./ScanPrintTab";
 import ConfirmModal from "./ConfirmModal";
+import DangerConfirm from "./DangerConfirm";
 import { useAuth } from "./AuthProvider";
 
 import { useRouter } from "next/navigation";
@@ -22,6 +23,7 @@ import {
   getAssignmentsHistory,
   updatePersonAction,
   getDashboardStats,
+  exportFullBackup,
 } from "../Js/actions";
 
 const BUILDINGS = {
@@ -78,6 +80,7 @@ export default function UnitAllocationApp({ initialData }) {
   const [newScore, setNewScore] = useState("");
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const [logsClearedAt, setLogsClearedAt] = useState(null);
 
@@ -405,18 +408,27 @@ export default function UnitAllocationApp({ initialData }) {
     URL.revokeObjectURL(url);
   }
 
-  function exportJSON() {
-    const payload = { people, units, assignments };
+  async function exportJSON() {
+    const result = await exportFullBackup();
+    if (!result.ok) {
+      notify("❌ خطا در بکاپ: " + result.error);
+      return;
+    }
+
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify(payload, null, 2)], {
+      new Blob([JSON.stringify(result.data, null, 2)], {
         type: "application/json",
       }),
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "backup.json";
+    a.download = `backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+
+    notify(
+      `✅ بکاپ کامل ذخیره شد (${result.data.meta.total_people} نفر، ${result.data.meta.total_units} واحد، ${result.data.meta.total_history} لاگ).`,
+    );
   }
 
   function parseCSVLine(line) {
@@ -1059,85 +1071,11 @@ export default function UnitAllocationApp({ initialData }) {
         <ScanPrintTab assignments={assignments} people={people} />
       )}
 
-      {tab === "print" && (
-        <section className="card">
-          <h2>🖨 ساخت و چاپ QR کد واحدها</h2>
-
-          <div className="warning-box">
-            <strong>⚠️ توجه مهم</strong>
-            <p>
-              محتوای هر QR کد <strong>ثابت</strong> است و به کد واحد مربوط
-              می‌شود (مثلاً <code>A1-15</code>).
-            </p>
-            <p>
-              QR ها هر بار <strong>عیناً یکسان</strong> ساخته می‌شوند. بنابراین:
-            </p>
-            <ul>
-              <li>
-                ✅ کافی است <strong>فقط یک بار</strong> چاپ کنید و به واحدها
-                بزنید.
-              </li>
-              <li>❌ ساخت دوباره نیاز به چاپ و جایگزینی فیزیکی ندارد.</li>
-              <li>💡 QR های چاپ‌شده و QR های جدید، با هم سازگارند.</li>
-            </ul>
-          </div>
-
-          <p>
-            با زدن دکمه ساخت، برای هر واحد یک QR کد ساخته می‌شود. محتوای هر QR
-            کد، کد همان واحد است؛ مثلاً <strong>A1-15</strong>.
-          </p>
-
-          <div className="actions qr-actions">
-            <button onClick={generateQRCodes} disabled={isGeneratingQR}>
-              {isGeneratingQR
-                ? `در حال ساخت... ${qrProgress} از ${ALL_UNITS.length}`
-                : "ساخت QR کدها"}
-            </button>
-            <button
-              className="gray"
-              onClick={printBarcodes}
-              disabled={!qrCodes.length || isGeneratingQR}
-            >
-              چاپ QR کدها
-            </button>
-          </div>
-
-          {isGeneratingQR && (
-            <p className="stats" role="status">
-              ساخت {qrProgress} از {ALL_UNITS.length} کد...
-            </p>
-          )}
-
-          {!isGeneratingQR && qrCodes.length > 0 && (
-            <p className="stats">{qrCodes.length} کد QR آماده چاپ است.</p>
-          )}
-
-          <div className="barcode-grid">
-            {qrCodes.map(({ code, src }) => (
-              <div className="barcode-item" key={code}>
-                <img
-                  src={src}
-                  alt={`QR code for unit ${code}`}
-                  loading="lazy"
-                />
-                <strong>{code}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {tab === "data" && (
         <DataTab
           onExportJSON={exportJSON}
           onExportCSV={exportCSV}
-          onResetAll={() => {
-            if (
-              window.confirm("همه داده‌ها حذف شوند؟") &&
-              window.confirm("این عملیات برگشت‌پذیر نیست. مطمئنید؟")
-            )
-              runAction(() => resetAllAction());
-          }}
+          onResetAll={() => setShowResetConfirm(true)}
           busy={busy}
           logsClearedAt={logsClearedAt}
           setLogsClearedAt={setLogsClearedAt}
@@ -1330,6 +1268,20 @@ export default function UnitAllocationApp({ initialData }) {
           cb?.();
         }}
         onCancel={() => setConfirmDialog(null)}
+      />
+
+      <DangerConfirm
+        open={showResetConfirm}
+        title="🗑️ پاک کردن همه داده‌ها"
+        message={`تمام افراد (${people.length} نفر)، تمام تخصیص‌ها (${takenCount} واحد) و تمام تاریخچه پاک می‌شوند.`}
+        warning="این عملیات برگشت‌پذیر نیست. اگر بکاپ نگرفته‌اید، الان آخرین فرصت شماست."
+        confirmText="DELETE"
+        confirmLabel="🗑️ حذف همه داده‌ها"
+        onCancel={() => setShowResetConfirm(false)}
+        onConfirm={() => {
+          setShowResetConfirm(false);
+          runAction(() => resetAllAction());
+        }}
       />
     </main>
   );

@@ -1634,3 +1634,99 @@ footer { color: var(--text-muted); font-size: 12px; padding: 10px; }
     font-size: 0.8rem;
   }
 }
+
+
+/* ============================================
+   مودال عملیات خطرناک
+============================================ */
+
+.danger-modal {
+  max-width: 480px;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3);
+}
+
+.danger-modal-header {
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.danger-modal-header h2 {
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.danger-warning-box {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  animation: dangerPulse 2s ease-in-out infinite;
+}
+
+@keyframes dangerPulse {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+  50% { border-color: rgba(239, 68, 68, 0.7); }
+}
+
+.danger-warning-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.danger-warning-box strong {
+  display: block;
+  color: #fca5a5;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.danger-warning-box p {
+  margin: 6px 0;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.danger-confirm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.danger-confirm-section label {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin: 0;
+}
+
+.danger-confirm-section label code {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.danger-confirm-section input {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.danger-confirm-section input:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
