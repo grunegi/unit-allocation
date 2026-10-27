@@ -160,11 +160,13 @@ option { background: #1e1b4b; color: #fff; }
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .unit.taken {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: var(--success);
-  color: #a7f3d0;
+  background: rgba(220, 38, 38, 0.2);
+  border-color: #dc2626;
+  color: #fecaca;
 }
-.unit.taken:hover { background: rgba(16, 185, 129, 0.3); }
+.unit.taken:hover {
+  background: rgba(220, 38, 38, 0.3);
+}
 .unit small { font-size: 10px; color: var(--text-muted); }
 
 .section-title { margin-top: 20px; }

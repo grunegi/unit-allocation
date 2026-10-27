@@ -10,9 +10,19 @@ import {
 } from "../Js/actions";
 
 const DEFAULT_BUILDINGS = {
-  A1: 40, A2: 40, A3: 40, A4: 40, A5: 40, A6: 40,
-  B1: 22, B2: 40, B3: 40, B4: 40,
-  C1: 40, C2: 40, C3: 40,
+  A1: 40,
+  A2: 40,
+  A3: 40,
+  A4: 40,
+  A5: 40,
+  A6: 40,
+  B1: 22,
+  B2: 40,
+  B3: 40,
+  B4: 40,
+  C1: 40,
+  C2: 40,
+  C3: 40,
 };
 
 const PART_EAST = "راست";
@@ -110,7 +120,9 @@ export default function UnitStatusScanner({
     : [];
 
   function checkUnit(rawCode) {
-    const normalizedCode = String(rawCode || "").trim().toUpperCase();
+    const normalizedCode = String(rawCode || "")
+      .trim()
+      .toUpperCase();
 
     if (!normalizedCode) {
       setScanResult({
@@ -222,7 +234,11 @@ export default function UnitStatusScanner({
                       className={`unit ${assignments[code] ? "taken" : ""}`}
                     >
                       <strong>{code}</strong>
-                      <small>{assignments[code]?.name || "آزاد"}</small>
+                      <small>
+                        {assignments[code]
+                          ? assignments[code].name || "انتخاب شده"
+                          : "آزاد"}
+                      </small>
                     </div>
                   ))}
                 </div>
@@ -304,14 +320,12 @@ export default function UnitStatusScanner({
                 <div className="scan-icon">✅</div>
                 <h3>واحد آزاد است</h3>
                 <p className="scan-unit">{scanResult.unit}</p>
-                <p className="scan-message">
-                  این واحد هنوز تخصیص داده نشده است.
-                </p>
+                <p className="scan-message">این واحد هنوز انتخاب نشده است.</p>
               </>
             ) : (
               <>
                 <div className="scan-icon">🔒</div>
-                <h3>این واحد قبلاً تخصیص داده شده است</h3>
+                <h3>این واحد قبلاً انتخاب شده است</h3>
                 <p className="scan-unit">{scanResult.unit}</p>
                 {showPersonInfo && scanResult.person && (
                   <div className="scan-person">
@@ -421,8 +435,7 @@ export default function UnitStatusScanner({
                         {row.taken} از {row.total}
                       </span>
                       <span className={`building-percent percent-${status}`}>
-                        {percent}%
-                        {status === "full" && " ●"}
+                        {percent}%{status === "full" && " ●"}
                         {status === "warning" && " ⚠"}
                       </span>
                     </div>
