@@ -1732,3 +1732,84 @@ footer { color: var(--text-muted); font-size: 12px; padding: 10px; }
   border-color: var(--danger);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
 }
+
+
+/* ============================================
+   دکمه‌های ورود و ثبت ادمین — هم‌اندازه در یک بلاک
+============================================ */
+
+/* جعبه‌ی دور هر دو دکمه */
+.login-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* دو ستون مساوی — کنار هم */
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+/* استایل مشترک هر دو دکمه */
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+/* دکمه ورود — بنفش */
+.login-btn:not(.login-btn-secondary) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.login-btn:not(.login-btn-secondary):hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+/* دکمه ثبت ادمین — خاکستری */
+.login-btn-secondary {
+  background: var(--primary);
+  color: var(--text-soft);
+  border-color: var(--primary);
+}
+
+.login-btn-secondary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+/* موبایل — زیر هم */
+@media (max-width: 480px) {
+  .login-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* در صفحه ورود، چون فقط دکمه ورود مانده، تمام‌عرض شود */
+.login-card .login-actions {
+  grid-template-columns: 1fr;
+}
+
+
+

@@ -2,60 +2,97 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import {
-  getAdminPassword,
-  updateAdminPassword,
-} from "../Js/actions";
+  loginAdminAction,
+  logoutAdminAction,
+  getAdminSessionAction,
+  getAdminAccessLevelAction,
+} from "../Js/adminActions";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("5041");
-  const [passwordLoaded, setPasswordLoaded] = useState(false);
+  const [adminInfo, setAdminInfo] = useState(null);
+  const [accessLevel, setAccessLevel] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
-  // لود رمز از دیتابیس
+  // در بارگذاری اولیه: session از کوکی + access_level از دیتابیس
   useEffect(() => {
-    getAdminPassword().then((result) => {
-      if (result.ok) {
-        setCurrentPassword(result.password);
+    async function init() {
+      try {
+        const result = await getAdminSessionAction();
+
+        if (!result.ok || !result.session) {
+          setSessionLoading(false);
+          return;
+        }
+
+        // access_level را از دیتابیس بخوان (نه از کوکی)
+        const accessResult = await getAdminAccessLevelAction(result.session.id);
+
+        if (!accessResult.ok) {
+          // ادمین حذف/رد شده یا تأییدش نیست → session را پاک کن
+          await logoutAdminAction();
+          setIsLoggedIn(false);
+          setAdminInfo(null);
+          setAccessLevel(null);
+          return;
+        }
+
+        setIsLoggedIn(true);
+        setAdminInfo(result.session);
+        setAccessLevel(accessResult.access_level);
+      } catch (err) {
+        console.error("AuthProvider init error:", err);
+      } finally {
+        setSessionLoading(false);
       }
-      setPasswordLoaded(true);
-    });
+    }
+
+    init();
   }, []);
 
-  function login(inputPassword) {
-    if (!passwordLoaded) {
-      return { ok: false, error: "سیستم در حال بارگذاری است. لطفاً دوباره امتحان کنید." };
-    }
-
-    if (inputPassword === currentPassword) {
-      setIsLoggedIn(true);
-      return { ok: true };
-    }
-
-    return { ok: false, error: "رمز عبور اشتباه است." };
-  }
-
-  function logout() {
-    setIsLoggedIn(false);
-  }
-
-  async function changePassword(newPassword) {
-    const result = await updateAdminPassword(newPassword);
+  async function login(nationalId, password) {
+    const result = await loginAdminAction({ nationalId, password });
     if (!result.ok) {
       return result;
     }
-    setCurrentPassword(newPassword);
+    setIsLoggedIn(true);
+    setAdminInfo(result.admin);
+    setAccessLevel(result.admin.access_level);
     return { ok: true };
+  }
+
+  async function logout() {
+    await logoutAdminAction();
+    setIsLoggedIn(false);
+    setAdminInfo(null);
+    setAccessLevel(null);
+  }
+
+  // برای تازه‌کردن دسترسی بعد از تغییرات
+  async function refreshAccessLevel() {
+    if (!adminInfo?.id) return;
+    const res = await getAdminAccessLevelAction(adminInfo.id);
+    if (res.ok) {
+      setAccessLevel(res.access_level);
+    } else {
+      // اگر دیگر معتبر نیست، خارج شو
+      await logoutAdminAction();
+      setIsLoggedIn(false);
+      setAdminInfo(null);
+      setAccessLevel(null);
+    }
   }
 
   const value = {
     isLoggedIn,
-    currentPassword,
-    passwordLoaded,
+    adminInfo,
+    accessLevel,
+    sessionLoading,
     login,
     logout,
-    changePassword,
+    refreshAccessLevel,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

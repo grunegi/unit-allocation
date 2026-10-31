@@ -1,4 +1,4 @@
-export default function RootLayout({ children }) {
+export default function Layout({ children }) {
   return (
     <>
       {children}

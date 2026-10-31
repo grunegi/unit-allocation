@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 
 import "../css/blocksummery.css";
 import Qrscanner from "./Qrscanner";
+
 import {
   getUnitsSummaryByBuilding,
   getBuildingsWithUnitsMeta,

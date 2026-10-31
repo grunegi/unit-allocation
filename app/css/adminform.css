@@ -1,0 +1,64 @@
+/* پیام خطای فیلد */
+.field-error {
+  color: #fca5a5;
+  font-size: 0.78rem;
+  margin-top: 2px;
+  padding-right: 4px;
+}
+
+/* فرم ثبت ادمین */
+.admin-request-form {
+  display: grid;
+  gap: 12px;
+  text-align: right;
+  margin-top: 16px;
+}
+
+.admin-request-form .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-request-form label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.admin-request-form input {
+  margin-bottom: 0;
+}
+
+/* دکمه‌های فرم ثبت ادمین — در یک بلاک و هم‌اندازه */
+.login-card .login-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.login-card .login-actions > * {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.login-success {
+  color: #6ee7b7;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* موبایل — زیر هم */
+@media (max-width: 480px) {
+  .login-card .login-actions {
+    grid-template-columns: 1fr;
+  }
+}

@@ -241,3 +241,40 @@
     font-size: 0.82rem;
   }
 }
+
+
+
+/* دکمه مدیریت ادمین‌ها */
+.admin-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(79, 70, 229, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(79, 70, 229, 0.4);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.admin-manage-btn:hover {
+  background: rgba(79, 70, 229, 0.25);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  text-decoration: none;
+}
+
+/* موبایل */
+@media (max-width: 600px) {
+  .header-actions .admin-manage-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}

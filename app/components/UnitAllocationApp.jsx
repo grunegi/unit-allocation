@@ -2,13 +2,16 @@
 
 import DashboardPlan from "./DashboardPlan";
 import DataTab from "./DataTab";
-import PasswordChangeModal from "./PasswordChangeModal";
 import ScanPrintTab from "./ScanPrintTab";
+import PartColumn from "./PartColumn";
 import ConfirmModal from "./ConfirmModal";
 import DangerConfirm from "./DangerConfirm";
+import SelectTab from "./SelectTab";
+import { useAppData } from "../hooks/useAppData";
 import { useAuth } from "./AuthProvider";
 
 import { useRouter } from "next/navigation";
+import { BUILDINGS, ALL_UNITS } from "../../lib/supabase/constants";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
@@ -26,50 +29,43 @@ import {
   exportFullBackup,
 } from "../Js/actions";
 
-const BUILDINGS = {
-  A1: 40,
-  A2: 40,
-  A3: 40,
-  A4: 40,
-  A5: 40,
-  A6: 40,
-  B1: 22,
-  B2: 40,
-  B3: 40,
-  B4: 40,
-  C1: 40,
-  C2: 40,
-  C3: 40,
-};
-
-const ALL_UNITS = Object.entries(BUILDINGS).flatMap(([building, count]) =>
-  Array.from({ length: count }, (_, index) => `${building}-${index + 1}`),
-);
-
-const TABS = [
-  ["dashboard", "📊 داشبورد و پلان"],
-  ["select", "📋 انتخاب واحد"],
-  ["filter", "🔍 فیلتر و جستجو"],
-  ["people", "👥 ثبت متقاضی"],
-  ["scan", "📷 اسکن و چاپ QR"],
-  ["data", "💾 گزارش گیری"],
-];
-
 export default function UnitAllocationApp({ initialData }) {
+  const {
+    people,
+    setPeople,
+    units,
+    setUnits,
+    assignments,
+    setAssignments,
+    dashboardStats,
+    unitsMap,
+    personUnitsMap,
+  } = useAppData(initialData);
+
   const router = useRouter();
   const {
     isLoggedIn,
-    currentPassword,
+    accessLevel,
+    adminInfo,
+    sessionLoading,
     login: authLogin,
-    changePassword,
+    logout: authLogout,
   } = useAuth();
+
+  const tabs = [
+    ["dashboard", "📊 داشبورد و پلان"],
+    ["select", "📋 انتخاب واحد"],
+    ["filter", "🔍 فیلتر و جستجو"],
+    ["people", "👥 ثبت متقاضی"],
+    ["scan", "📷 اسکن و چاپ QR"],
+  ];
+
+  if (accessLevel === "full") {
+    tabs.push(["data", "💾 گزارش گیری"]);
+  }
 
   const [tab, setTab] = useState("dashboard");
   const [password, setPassword] = useState("");
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [people, setPeople] = useState(initialData.people || []);
-  const [units, setUnits] = useState(initialData.units || []);
-  const [assignments, setAssignments] = useState(initialData.assignments || {});
   const [personId, setPersonId] = useState("");
   const [unitCode, setUnitCode] = useState("");
   const [newName, setNewName] = useState("");
@@ -81,15 +77,9 @@ export default function UnitAllocationApp({ initialData }) {
   const [collapsedBuildings, setCollapsedBuildings] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [nationalId, setNationalId] = useState("");
 
   const [logsClearedAt, setLogsClearedAt] = useState(null);
-
-  const [dashboardStats, setDashboardStats] = useState({
-    totalUnits: 0,
-    takenUnits: 0,
-    freeUnits: 0,
-    totalPeople: 0,
-  });
 
   const [peopleSearch, setPeopleSearch] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
@@ -110,42 +100,10 @@ export default function UnitAllocationApp({ initialData }) {
   );
 
   useEffect(() => {
-    setPeople(initialData.people || []);
-    setUnits(initialData.units || []);
-    setAssignments(initialData.assignments || {});
-  }, [initialData]);
-
-  useEffect(() => {
-    if (tab === "dashboard") {
-      getDashboardStats().then((result) => {
-        if (result.ok) {
-          setDashboardStats({
-            totalUnits: result.totalUnits,
-            takenUnits: result.takenUnits,
-            freeUnits: result.freeUnits,
-            totalPeople: result.totalPeople,
-          });
-        }
-      });
+    if (tab === "data" && accessLevel !== "full") {
+      setTab("dashboard");
     }
-  }, [tab, assignments]);
-
-  useEffect(() => {
-    const sorted = [...(initialData.people || [])]
-      .sort((a, b) => {
-        const sa = a.score ?? 0;
-        const sb = b.score ?? 0;
-        if (sa !== sb) return sb - sa;
-        return new Date(a.created_at) - new Date(b.created_at);
-      })
-      .map((p, index) => ({
-        ...p,
-        priority: index + 1,
-      }));
-    setPeople(sorted);
-    setUnits(initialData.units || []);
-    setAssignments(initialData.assignments || {});
-  }, [initialData]);
+  }, [tab, accessLevel]);
 
   const [busy, startTransition] = useTransition();
 
@@ -171,38 +129,39 @@ export default function UnitAllocationApp({ initialData }) {
     [filterBuilding, filterStatus, search, assignments],
   );
 
-  const personUnitsMap = useMemo(() => {
-    const map = {};
-    for (const [code, a] of Object.entries(assignments)) {
-      if (!a.personId) continue;
-      if (!map[a.personId]) map[a.personId] = [];
-      map[a.personId].push(code);
-    }
-    return map;
-  }, [assignments]);
-
-  const unitsMap = useMemo(() => {
-    const map = {};
-    for (const unit of units || []) {
-      map[unit.code] = unit;
-    }
-    return map;
-  }, [units]);
-
   function notify(text) {
     setMessage(text);
   }
 
-  function login(event) {
+  async function login(event) {
     event.preventDefault();
-    const result = authLogin(password);
+    setMessage("");
+
+    if (!nationalId.trim() || !password.trim()) {
+      setMessage("❌ کد ملی و رمز عبور را وارد کنید.");
+      return;
+    }
+
+    const result = await authLogin(nationalId, password);
     if (!result.ok) {
       setMessage("❌ " + result.error);
       setPassword("");
       return;
     }
+
     setMessage("");
     setPassword("");
+    setNationalId("");
+  }
+
+  if (sessionLoading) {
+    return (
+      <main className="login-container">
+        <section className="card login-card">
+          <h1>⏳ در حال بارگذاری...</h1>
+        </section>
+      </main>
+    );
   }
 
   if (!isLoggedIn) {
@@ -210,8 +169,19 @@ export default function UnitAllocationApp({ initialData }) {
       <main className="login-container">
         <section className="card login-card">
           <h1>🔐 ورود به سیستم</h1>
-          <p>رمز عبور را وارد کنید</p>
+          <p>کد ملی و رمز عبور را وارد کنید</p>
           <form onSubmit={login}>
+            <input
+              type="text"
+              value={nationalId}
+              onChange={(event) => setNationalId(event.target.value)}
+              placeholder="کد ملی"
+              inputMode="numeric"
+              autoComplete="off"
+              aria-label="کد ملی"
+              autoFocus
+              maxLength={10}
+            />
             <input
               type="password"
               value={password}
@@ -220,9 +190,16 @@ export default function UnitAllocationApp({ initialData }) {
               inputMode="numeric"
               autoComplete="current-password"
               aria-label="رمز عبور"
-              autoFocus
             />
-            <button type="submit">ورود</button>
+            <div className="login-actions">
+              <button
+                type="submit"
+                className="login-btn"
+                disabled={sessionLoading}
+              >
+                {sessionLoading ? "در حال بررسی..." : "ورود"}
+              </button>
+            </div>
           </form>
           {message && (
             <p className="login-message" role="alert">
@@ -548,61 +525,6 @@ export default function UnitAllocationApp({ initialData }) {
     }
   }
 
-  async function handlePasswordChange(newPassword) {
-    const result = await changePassword(newPassword);
-    if (!result.ok) {
-      notify("❌ " + result.error);
-      return;
-    }
-    setShowPasswordModal(false);
-    notify("✅ رمز عبور تغییر یافت.");
-  }
-
-  function renderPartColumn(partSide, partName, partCodes, interactive = true) {
-    if (!partCodes.length) return null;
-
-    const floorGroups = {};
-    partCodes.forEach((code) => {
-      const floor = unitsMap[code]?.floor || 1;
-      if (!floorGroups[floor]) floorGroups[floor] = [];
-      floorGroups[floor].push(code);
-    });
-
-    const partClass = partSide === "راست" ? "part-right" : "part-left";
-    const icon = partSide === "راست" ? "➡️" : "⬅️";
-    const floorNames = ["اول", "دوم", "سوم", "چهارم", "پنجم"];
-
-    const sortedFloors = Object.keys(floorGroups).sort((a, b) => a - b);
-
-    return (
-      <div className={`part-column ${partClass}`}>
-        <div className="part-title">
-          {icon} پارت {partName} ({partSide})
-        </div>
-        {sortedFloors.map((floor) => {
-          const floorName = floorNames[floor - 1] || `طبقه ${floor}`;
-          return (
-            <div className="floor-group" key={floor}>
-              <div className="floor-title">طبقه {floorName}</div>
-              <div className="unit-grid">
-                {floorGroups[floor].map((code) => (
-                  <button
-                    key={code}
-                    className={`unit ${assignments[code] ? "taken" : ""}`}
-                    onClick={() => setUnitCode(code)}
-                  >
-                    <strong>{code}</strong>
-                    <small>{assignments[code]?.name || "آزاد"}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <main className="container">
       <header className="card">
@@ -610,18 +532,25 @@ export default function UnitAllocationApp({ initialData }) {
           <h1>🏢 سیستم تخصیص واحد (پنل مدیریت سایت)</h1>
 
           <div className="header-actions">
+            {accessLevel === "full" && (
+              <Link
+                href="/SuperAdmin"
+                className="admin-manage-btn"
+                title="مدیریت ادمین‌ها"
+              >
+                👥 مدیریت ادمین‌ها
+              </Link>
+            )}
             <button
               type="button"
-              className="password-change-btn"
-              onClick={() => setShowPasswordModal(true)}
-              title="تغییر رمز عبور"
+              className="logout-btn"
+              onClick={async () => {
+                await authLogout();
+              }}
+              title="خروج"
             >
-              🔑 تغییر رمز
-            </button>
-
-            <Link href="/" className="logout-btn" title="خروج به صفحه اصلی">
               🚪 خروج
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -659,7 +588,7 @@ export default function UnitAllocationApp({ initialData }) {
         </div>
       )}
       <nav className="tabs" aria-label="بخش‌های برنامه">
-        {TABS.map(([id, label]) => (
+        {tabs.map(([id, label]) => (
           <button
             key={id}
             className={tab === id ? "active" : ""}
@@ -694,123 +623,20 @@ export default function UnitAllocationApp({ initialData }) {
       )}
 
       {tab === "select" && (
-        <section className="card">
-          <h2>ثبت تخصیص</h2>
-          <label htmlFor="person">فرد</label>
-          <select
-            id="person"
-            value={personId}
-            onChange={(e) => setPersonId(e.target.value)}
-          >
-            <option value="">-- انتخاب کنید --</option>
-            {people.map((p) => {
-              const count = (personUnitsMap[p.id] || []).length;
-              return (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.score ? ` (امتیاز: ${p.score})` : ""}
-                  {count > 0 ? ` - ${count} واحد` : ""}
-                </option>
-              );
-            })}
-          </select>
-          <label htmlFor="unit">کد واحد (یا اسکن کنید)</label>
-          <input
-            id="unit"
-            value={unitCode}
-            onChange={(e) => setUnitCode(e.target.value.toUpperCase())}
-            placeholder="مثلاً A1-15"
-          />
-          <div className="actions">
-            <button disabled={busy} onClick={assign}>
-              ✅ ثبت انتخاب
-            </button>
-            <button
-              className="gray"
-              onClick={() => {
-                setPersonId("");
-                setUnitCode("");
-              }}
-            >
-              پاک کردن فرم
-            </button>
-          </div>
-
-          <h2 className="section-title">واحدها</h2>
-
-          {Object.keys(BUILDINGS).map((building) => {
-            const buildingUnits = ALL_UNITS.filter((code) =>
-              code.startsWith(`${building}-`),
-            );
-            const takenInBuilding = buildingUnits.filter(
-              (code) => assignments[code],
-            ).length;
-            const isCollapsed = collapsedBuildings[building];
-
-            return (
-              <div
-                className="building-section"
-                key={building}
-                id={`building-${building}`}
-              >
-                <div className="building-header">
-                  <div
-                    className="building-title"
-                    onClick={() =>
-                      setCollapsedBuildings((prev) => ({
-                        ...prev,
-                        [building]: !prev[building],
-                      }))
-                    }
-                    style={{ cursor: "pointer", flex: 1 }}
-                    role="button"
-                    tabIndex={0}
-                    aria-expanded={!isCollapsed}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setCollapsedBuildings((prev) => ({
-                          ...prev,
-                          [building]: !prev[building],
-                        }));
-                      }
-                    }}
-                  >
-                    <span className="building-caret">
-                      {isCollapsed ? "▶" : "▼"}
-                    </span>
-                    🏢 {building}
-                  </div>
-
-                  <div className="building-header-right">
-                    <span className="building-stats">
-                      {takenInBuilding} از {buildingUnits.length} تخصیص‌یافته
-                    </span>
-                  </div>
-                </div>
-
-                {!isCollapsed && (
-                  <div className="parts-container">
-                    {renderPartColumn(
-                      "راست",
-                      "شرقی",
-                      buildingUnits.filter(
-                        (code) => unitsMap[code]?.part === "راست",
-                      ),
-                    )}
-                    {renderPartColumn(
-                      "چپ",
-                      "غربی",
-                      buildingUnits.filter(
-                        (code) => unitsMap[code]?.part === "چپ",
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </section>
+        <SelectTab
+          people={people}
+          personId={personId}
+          setPersonId={setPersonId}
+          unitCode={unitCode}
+          setUnitCode={setUnitCode}
+          personUnitsMap={personUnitsMap}
+          assignments={assignments}
+          unitsMap={unitsMap}
+          collapsedBuildings={collapsedBuildings}
+          setCollapsedBuildings={setCollapsedBuildings}
+          busy={busy}
+          onAssign={assign}
+        />
       )}
 
       {tab === "filter" && (
@@ -905,8 +731,22 @@ export default function UnitAllocationApp({ initialData }) {
 
                   {!isCollapsed && (
                     <div className="parts-container">
-                      {renderPartColumn("راست", "شرقی", rightPart, false)}
-                      {renderPartColumn("چپ", "غربی", leftPart, false)}
+                      <PartColumn
+                        partSide="راست"
+                        partName="شرقی"
+                        partCodes={rightPart}
+                        assignments={assignments}
+                        unitsMap={unitsMap}
+                        onSelectUnit={setUnitCode}
+                      />
+                      <PartColumn
+                        partSide="چپ"
+                        partName="غربی"
+                        partCodes={leftPart}
+                        assignments={assignments}
+                        unitsMap={unitsMap}
+                        onSelectUnit={setUnitCode}
+                      />
                     </div>
                   )}
                 </div>
@@ -1071,7 +911,7 @@ export default function UnitAllocationApp({ initialData }) {
         <ScanPrintTab assignments={assignments} people={people} />
       )}
 
-      {tab === "data" && (
+      {tab === "data" && accessLevel === "full" && (
         <DataTab
           onExportJSON={exportJSON}
           onExportCSV={exportCSV}
@@ -1248,13 +1088,6 @@ export default function UnitAllocationApp({ initialData }) {
           </div>
         </div>
       )}
-
-      <PasswordChangeModal
-        open={showPasswordModal}
-        currentPassword={currentPassword}
-        onClose={() => setShowPasswordModal(false)}
-        onSuccess={handlePasswordChange}
-      />
 
       <ConfirmModal
         open={!!confirmDialog}
