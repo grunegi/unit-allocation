@@ -288,10 +288,23 @@ export default function UnitAllocationApp({ initialData }) {
     );
   }
 
-  function assign() {
-    if (!personId) return notify("ابتدا فرد را انتخاب کنید.");
-    if (!unitCode.trim()) return notify("کد واحد را وارد کنید.");
-    runAction(() => assignUnitAction(personId, unitCode));
+  function assign(
+    selectedPersonId = personId,
+    selectedUnitCode = unitCode,
+    onSuccess,
+  ) {
+    if (!selectedPersonId) {
+      return notify("ابتدا فرد را انتخاب کنید.");
+    }
+
+    if (!selectedUnitCode.trim()) {
+      return notify("کد واحد را وارد کنید.");
+    }
+
+    runAction(
+      () => assignUnitAction(selectedPersonId, selectedUnitCode),
+      onSuccess,
+    );
   }
 
   function removePerson(person) {

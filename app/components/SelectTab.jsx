@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import PartColumn from "../components/PartColumn";
+import AssignmentModal from "../components/AssignmentModal";
+
 import { BUILDINGS, ALL_UNITS } from "../../lib/supabase/constants";
 
 export default function SelectTab({
@@ -17,40 +21,79 @@ export default function SelectTab({
   busy,
   onAssign,
 }) {
+  const [selectedUnitCode, setSelectedUnitCode] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // باز کردن مودال با انتخاب یک واحد آزاد
+  function handleSelectUnit(code) {
+    if (assignments[code]) return;
+
+    setSelectedUnitCode(code);
+    setUnitCode(code);
+    setIsModalOpen(true);
+  }
+
+  // بستن مودال
+  function handleCloseModal() {
+    if (busy) return;
+
+    setIsModalOpen(false);
+    setSelectedUnitCode("");
+  }
+
+  // ارسال اطلاعات فرد و واحد انتخاب‌شده به تابع تخصیص
+  function handleModalAssign(selectedPersonId, selectedCode) {
+    onAssign(selectedPersonId, selectedCode, () => {
+      setIsModalOpen(false);
+      setSelectedUnitCode("");
+      setUnitCode("");
+    });
+  }
+
   return (
     <section className="card">
       <h2>ثبت تخصیص</h2>
+
       <label htmlFor="person">فرد</label>
+
       <select
         id="person"
         value={personId}
         onChange={(e) => setPersonId(e.target.value)}
       >
         <option value="">-- انتخاب کنید --</option>
-        {people.map((p) => {
-          const count = (personUnitsMap[p.id] || []).length;
+
+        {people.map((person) => {
+          const count = (personUnitsMap[person.id] || []).length;
+
           return (
-            <option key={p.id} value={p.id}>
-              {p.name}
-              {p.score ? ` (امتیاز: ${p.score})` : ""}
+            <option key={person.id} value={person.id}>
+              {person.name}
+              {person.score ? ` (امتیاز: ${person.score})` : ""}
               {count > 0 ? ` - ${count} واحد` : ""}
             </option>
           );
         })}
       </select>
+
       <label htmlFor="unit">کد واحد (یا اسکن کنید)</label>
+
       <input
         id="unit"
         value={unitCode}
         onChange={(e) => setUnitCode(e.target.value.toUpperCase())}
         placeholder="مثلاً A1-15"
       />
+
       <div className="actions">
-        <button disabled={busy} onClick={onAssign}>
+        <button type="button" disabled={busy} onClick={() => onAssign()}>
           ✅ ثبت انتخاب
         </button>
+
         <button
+          type="button"
           className="gray"
+          disabled={busy}
           onClick={() => {
             setPersonId("");
             setUnitCode("");
@@ -64,11 +107,13 @@ export default function SelectTab({
 
       {Object.keys(BUILDINGS).map((building) => {
         const buildingUnits = ALL_UNITS.filter((code) =>
-          code.startsWith(`${building}-`)
+          code.startsWith(`${building}-`),
         );
+
         const takenInBuilding = buildingUnits.filter(
-          (code) => assignments[code]
+          (code) => assignments[code],
         ).length;
+
         const isCollapsed = collapsedBuildings[building];
 
         return (
@@ -93,6 +138,7 @@ export default function SelectTab({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
+
                     setCollapsedBuildings((prev) => ({
                       ...prev,
                       [building]: !prev[building],
@@ -119,27 +165,39 @@ export default function SelectTab({
                   partSide="راست"
                   partName="شرقی"
                   partCodes={buildingUnits.filter(
-                    (code) => unitsMap[code]?.part === "راست"
+                    (code) => unitsMap[code]?.part === "راست",
                   )}
                   assignments={assignments}
                   unitsMap={unitsMap}
-                  onSelectUnit={setUnitCode}
+                  onSelectUnit={handleSelectUnit}
                 />
+
                 <PartColumn
                   partSide="چپ"
                   partName="غربی"
                   partCodes={buildingUnits.filter(
-                    (code) => unitsMap[code]?.part === "چپ"
+                    (code) => unitsMap[code]?.part === "چپ",
                   )}
                   assignments={assignments}
                   unitsMap={unitsMap}
-                  onSelectUnit={setUnitCode}
+                  onSelectUnit={handleSelectUnit}
                 />
               </div>
             )}
           </div>
         );
       })}
+
+      {/* مودال تخصیص واحد */}
+      {isModalOpen && (
+        <AssignmentModal
+          people={people}
+          unitCode={selectedUnitCode}
+          busy={busy}
+          onClose={handleCloseModal}
+          onAssign={handleModalAssign}
+        />
+      )}
     </section>
   );
 }

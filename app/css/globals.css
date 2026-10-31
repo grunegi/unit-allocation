@@ -1245,6 +1245,7 @@ footer { color: var(--text-muted); font-size: 12px; padding: 10px; }
 }
 
 .logout-btn {
+  grid-template-columns: 1fr;
   display: inline-flex;
   align-items: center;
   gap: 6px;

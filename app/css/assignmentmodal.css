@@ -1,0 +1,356 @@
+
+/* ============================================
+   مودال تخصیص واحد
+============================================ */
+
+.assignment-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: assignmentFadeIn 0.2s ease;
+}
+
+.assignment-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--box-bg);
+  color: var(--text-light);
+  border: 1px solid var(--box-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: assignmentSlideIn 0.25s ease;
+}
+
+/* هدر مودال */
+
+.assignment-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.assignment-modal-header h2 {
+  margin: 0 0 5px;
+  font-size: 1.1rem;
+}
+
+.assignment-modal-header p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.assignment-modal-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.assignment-modal-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  box-shadow: none;
+  transform: none;
+}
+
+/* اطلاعات واحد */
+
+.assignment-unit-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 20px 4px;
+  padding: 12px 14px;
+  background: rgba(79, 70, 229, 0.12);
+  border: 1px solid rgba(79, 70, 229, 0.35);
+  border-radius: 10px;
+}
+
+.assignment-unit-info span {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.assignment-unit-info strong {
+  direction: ltr;
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #c7d2fe;
+}
+
+/* جست‌وجو */
+
+.assignment-search {
+  padding: 8px 20px 12px;
+}
+
+.assignment-search label {
+  display: block;
+  margin: 8px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.assignment-search input {
+  width: 100%;
+  margin-bottom: 5px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.assignment-search small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* نتایج جست‌وجو */
+
+.assignment-results {
+  padding: 0 20px;
+  overflow-y: auto;
+  min-height: 100px;
+  max-height: 260px;
+}
+
+.assignment-results-title {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.assignment-empty {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.assignment-empty span {
+  font-size: 1.8rem;
+}
+
+.assignment-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* کارت شخص */
+
+.assignment-person {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-light);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  text-align: right;
+  transition: background 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.assignment-person:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(165, 180, 252, 0.4);
+  transform: none;
+  box-shadow: none;
+}
+
+.assignment-person.selected {
+  background: rgba(79, 70, 229, 0.16);
+  border-color: var(--primary);
+}
+
+.assignment-person-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.assignment-person-info strong {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.assignment-person-info span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.assignment-person-check {
+  flex-shrink: 0;
+  width: 23px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.assignment-person.selected .assignment-person-check {
+  background: var(--primary);
+}
+
+/* شخص انتخاب‌شده */
+
+.assignment-selected-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 20px 0;
+  padding: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.assignment-selected-info span {
+  color: var(--text-muted);
+}
+
+.assignment-selected-info strong {
+  color: #6ee7b7;
+}
+
+/* دکمه‌های پایین */
+
+.assignment-modal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  margin-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.assignment-modal-actions button {
+  flex: 1;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.assignment-cancel-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-soft);
+  border: 1px solid var(--glass-border);
+}
+
+.assignment-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.assignment-submit-btn {
+  background: var(--primary);
+  color: #fff;
+}
+
+.assignment-submit-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.assignment-modal-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* انیمیشن */
+
+@keyframes assignmentFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes assignmentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* موبایل */
+
+@media (max-width: 600px) {
+  .assignment-modal-overlay {
+    padding: 10px;
+    align-items: center;
+  }
+
+  .assignment-modal {
+    max-height: 92vh;
+  }
+
+  .assignment-modal-header {
+    padding: 14px 16px;
+  }
+
+  .assignment-unit-info {
+    margin: 12px 16px 4px;
+  }
+
+  .assignment-search {
+    padding: 8px 16px 12px;
+  }
+
+  .assignment-results {
+    padding: 0 16px;
+    max-height: 220px;
+  }
+
+  .assignment-selected-info {
+    margin: 10px 16px 0;
+  }
+
+  .assignment-modal-actions {
+    padding: 12px 16px;
+  }
+}
