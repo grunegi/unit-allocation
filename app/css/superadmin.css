@@ -1,5 +1,6 @@
 /* ============================================
    پنل ادمین اصلی — درخواست‌های ثبت ادمین
+   (نسخه بهینه‌شده برای موبایل)
 ============================================ */
 
 .admin-requests-list {
@@ -9,13 +10,14 @@
   margin-top: 12px;
 }
 
-/* آیتم — فقط ظاهر و رنگ وضعیت (بدون flex) */
+/* آیتم — فقط ظاهر و رنگ وضعیت */
 .admin-request-item {
   padding: 12px 14px;
   background: #1e2229;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   transition: border-color 0.2s ease;
+  min-width: 0;
 }
 
 .admin-request-item:hover {
@@ -37,7 +39,8 @@
 
 .admin-request-info {
   flex: 1;
-  min-width: 180px;
+  min-width: 0;              /* ✅ جلوگیری از سرریز */
+  overflow-wrap: anywhere;   /* ✅ شکستن متن‌های طولانی */
 }
 
 .admin-request-info strong {
@@ -50,7 +53,7 @@
 .admin-request-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px 12px;
   font-size: 0.8rem;
   color: var(--text-muted);
 }
@@ -60,6 +63,7 @@
   gap: 6px;
   flex-shrink: 0;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 /* دکمه تأیید */
@@ -67,12 +71,14 @@
   background: rgba(16, 185, 129, 0.2);
   color: #6ee7b7;
   border: 1px solid rgba(16, 185, 129, 0.4);
-  padding: 6px 14px;
+  padding: 8px 14px;
+  min-height: 40px;           /* ✅ ناحیه لمسی */
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .btn-approve:hover {
@@ -86,12 +92,14 @@
   background: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.4);
-  padding: 6px 14px;
+  padding: 8px 14px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .btn-reject:hover {
@@ -107,6 +115,7 @@
   border-radius: 12px;
   font-size: 0.78rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .status-badge.status-approved {
@@ -124,7 +133,7 @@
 /* حالت خالی */
 .empty-state {
   text-align: center;
-  padding: 24px;
+  padding: 24px 16px;
   color: var(--text-muted);
   font-size: 0.9rem;
 }
@@ -138,10 +147,11 @@
   gap: 12px;
   align-items: center;
   flex-shrink: 0;
-  padding: 6px 10px;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
+  flex-wrap: wrap;
 }
 
 .access-option {
@@ -153,13 +163,15 @@
   color: var(--text-soft);
   margin: 0;
   user-select: none;
+  min-height: 32px;           /* ✅ ناحیه لمسی */
+  padding: 2px 0;
 }
 
 .access-option input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;                /* ✅ بزرگ‌تر برای لمس */
+  height: 18px;
   border: 2px solid var(--glass-border);
   border-radius: 50%;
   margin: 0;
@@ -178,7 +190,7 @@
 .access-option input[type="radio"]:checked::after {
   content: "";
   position: absolute;
-  inset: 2px;
+  inset: 3px;
   border-radius: 50%;
   background: var(--primary);
 }
@@ -213,7 +225,7 @@
 
 .panel-header .search-input {
   flex: 1;
-  min-width: 200px;
+  min-width: 0;               /* ✅ */
   max-width: 320px;
   margin: 0;
 }
@@ -223,13 +235,15 @@
   background: rgba(245, 158, 11, 0.15);
   color: #fcd34d;
   border: 1px solid rgba(245, 158, 11, 0.4);
-  padding: 6px 12px;
+  padding: 8px 12px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  font-family: inherit;
 }
 
 .btn-edit-access:hover {
@@ -248,27 +262,30 @@
   border: 1px solid rgba(79, 70, 229, 0.3);
   border-radius: 10px;
   flex: 1;
-  min-width: 220px;
+  min-width: 0;               /* ✅ */
 }
 
 .edit-access-radios {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .edit-password-input {
   margin: 0;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  padding: 10px 12px;
+  font-size: 0.9rem;
   text-align: center;
   letter-spacing: 2px;
+  width: 100%;                /* ✅ */
+  box-sizing: border-box;
 }
 
 .edit-message {
   color: #fca5a5;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   margin: 0;
-  padding: 4px 8px;
+  padding: 6px 8px;
   background: rgba(239, 68, 68, 0.1);
   border-radius: 6px;
 }
@@ -276,14 +293,16 @@
 .edit-actions {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .edit-actions button {
   flex: 1;
+  min-width: 0;
 }
 
 /* ============================================
-   ردیف اصلی: نام + تیک + دکمه‌ها در یک خط
+   ردیف اصلی: نام + تیک + دکمه‌ها
 ============================================ */
 
 .request-main-row {
@@ -296,7 +315,7 @@
 
 .request-main-row .admin-request-info {
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
 }
 
 .request-main-row .admin-request-access {
@@ -308,10 +327,11 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 /* ============================================
-   بخش‌های جداگانه (در انتظار / تأیید شده / رد شده)
+   بخش‌های جداگانه
 ============================================ */
 
 .request-section {
@@ -331,6 +351,7 @@
   margin: 0 0 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
 }
 
 .request-section-title.pending-title {
@@ -378,42 +399,9 @@
 }
 
 /* ============================================
-   موبایل
+   برچسب‌ها و بلاک وضعیت
 ============================================ */
 
-@media (max-width: 700px) {
-  .request-main-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .request-main-row .admin-request-actions {
-    width: 100%;
-  }
-
-  .request-main-row .admin-request-actions button {
-    flex: 1;
-  }
-
-  .panel-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .panel-header .search-input {
-    max-width: 100%;
-  }
-
-  .admin-request-access {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-
-
-/* برچسب سطح دسترسی (فقط برای تأییدشده‌ها) */
 .access-badge {
   display: inline-block;
   padding: 4px 10px;
@@ -435,9 +423,6 @@
   border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
-
-
-/* بلاک واحد وضعیت تأیید + سطح دسترسی */
 .status-block {
   display: inline-flex;
   align-items: center;
@@ -447,6 +432,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .status-block.approved-block {
@@ -465,13 +451,15 @@
   background: rgba(14, 165, 233, 0.15);
   color: #7dd3fc;
   border: 1px solid rgba(14, 165, 233, 0.4);
-  padding: 6px 12px;
+  padding: 8px 12px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  font-family: inherit;
 }
 
 .btn-recheck:hover {
@@ -480,22 +468,21 @@
   transform: translateY(-1px);
 }
 
-
 /* ============================================
-   اسکرول داخلی هر بخش بعد از ۵ نفر
+   اسکرول داخلی هر بخش
 ============================================ */
 
 .request-section .admin-requests-list {
-  max-height: 340px;          /* حدود ۵ آیتم */
+  max-height: 340px;
   overflow-y: auto;
   padding-left: 4px;
   padding-right: 2px;
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  -webkit-overflow-scrolling: touch;  /* ✅ اسکرول روان iOS */
 }
 
-/* اسکرول‌بار سفارشی (Chrome/Safari/Edge) */
 .request-section .admin-requests-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -513,16 +500,18 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
-
 /* ============================================
    مودال ویرایش دسترسی
 ============================================ */
 
 .edit-modal {
   max-width: 520px;
+  width: calc(100% - 24px);   /* ✅ فاصله از لبه‌ها در موبایل */
   border: 1px solid rgba(79, 70, 229, 0.4);
   box-shadow: 0 20px 60px rgba(79, 70, 229, 0.25);
   animation: editModalIn 0.25s ease;
+  max-height: calc(100vh - 32px);  /* ✅ جلوگیری از سرریز عمودی */
+  overflow-y: auto;
 }
 
 @keyframes editModalIn {
@@ -541,6 +530,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
 }
 
 /* اطلاعات شخص در مودال */
@@ -553,6 +543,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 12px;
   margin-bottom: 16px;
+  min-width: 0;
 }
 
 .edit-person-avatar {
@@ -574,12 +565,14 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 0;
+  min-width: 0;               /* ✅ */
+  flex: 1;
 }
 
 .edit-person-details strong {
   font-size: 1rem;
   color: var(--text-light);
+  overflow-wrap: anywhere;
 }
 
 .edit-person-details span {
@@ -588,6 +581,7 @@
   font-family: monospace;
   direction: ltr;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 /* پیام راهنما */
@@ -640,12 +634,15 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
+  min-height: 56px;           /* ✅ ناحیه لمسی بزرگ‌تر */
   background: rgba(255, 255, 255, 0.03);
   border: 2px solid var(--glass-border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   margin: 0;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .edit-access-card:hover {
@@ -698,6 +695,9 @@
   text-align: center;
   letter-spacing: 4px;
   background: var(--field-bg);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;           /* ✅ ناحیه لمسی */
 }
 
 /* پیام خطا */
@@ -718,20 +718,6 @@
   75% { transform: translateX(4px); }
 }
 
-/* موبایل */
-@media (max-width: 500px) {
-  .edit-access-radios {
-    grid-template-columns: 1fr;
-  }
-
-  .edit-person-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 1.1rem;
-  }
-}
-
-
 /* تب‌های مودال ویرایش */
 .edit-modal .modal-tabs {
   display: flex;
@@ -739,13 +725,21 @@
   padding: 8px 16px 0;
   border-bottom: 1px solid var(--glass-border);
   background: rgba(0, 0, 0, 0.15);
+  overflow-x: auto;           /* ✅ تب‌ها در موبایل اسکرول بشن */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.edit-modal .modal-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .edit-modal .modal-tabs button {
   background: none;
   border: none;
   border-radius: 8px 8px 0 0;
-  padding: 10px 18px;
+  padding: 10px 16px;
+  min-height: 40px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   color: var(--text-muted);
@@ -753,6 +747,8 @@
   font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .edit-modal .modal-tabs button:hover {
@@ -773,22 +769,29 @@
 .edit-field input[type="tel"] {
   margin: 0;
   padding: 10px 14px;
-  font-size: 0.9rem;
+  font-size: 16px;            /* ✅ جلوگیری از zoom خودکار iOS */
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
 }
 
+/* ============================================
+   دکمه حذف و بازگشت
+============================================ */
 
-/* دکمه حذف */
 .btn-delete {
   background: rgba(239, 68, 68, 0.12);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.35);
-  padding: 6px 12px;
+  padding: 8px 12px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  font-family: inherit;
 }
 
 .btn-delete:hover {
@@ -799,9 +802,6 @@
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-
-
-/* دکمه بازگشت */
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -810,6 +810,7 @@
   color: var(--text-soft);
   border: 1px solid var(--glass-border);
   padding: 8px 14px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -827,29 +828,23 @@
   text-decoration: none;
 }
 
-
-
-
 /* ============================================
    مودال حذف ادمین
 ============================================ */
 
 .delete-admin-modal {
   max-width: 480px;
+  width: calc(100% - 24px);   /* ✅ */
   border: 1px solid rgba(239, 68, 68, 0.4);
   box-shadow: 0 20px 60px rgba(239, 68, 68, 0.2);
   animation: deleteModalIn 0.25s ease;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
 }
 
 @keyframes deleteModalIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .delete-admin-header {
@@ -879,13 +874,8 @@
 }
 
 @keyframes deletePulse {
-  0%,
-  100% {
-    border-color: rgba(239, 68, 68, 0.35);
-  }
-  50% {
-    border-color: rgba(239, 68, 68, 0.7);
-  }
+  0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+  50%      { border-color: rgba(239, 68, 68, 0.7); }
 }
 
 .delete-warning-icon {
@@ -918,6 +908,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 12px;
   margin-bottom: 16px;
+  flex-wrap: wrap;            /* ✅ */
 }
 
 .delete-admin-avatar {
@@ -946,6 +937,7 @@
 .delete-admin-details strong {
   font-size: 1rem;
   color: var(--text-light);
+  overflow-wrap: anywhere;
 }
 
 .delete-admin-details span {
@@ -954,6 +946,7 @@
   font-family: monospace;
   direction: ltr;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .delete-admin-access {
@@ -994,12 +987,15 @@
   background: rgba(239, 68, 68, 0.2);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.5);
-  padding: 10px 20px;
+  padding: 12px 20px;
+  min-height: 44px;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
+  width: 100%;                /* ✅ در موبایل تمام‌عرض */
 }
 
 .btn-delete-confirm:hover:not(:disabled) {
@@ -1015,27 +1011,10 @@
   cursor: wait;
 }
 
-/* موبایل */
-@media (max-width: 500px) {
-  .delete-admin-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 1.1rem;
-  }
+/* ============================================
+   دکمه ثبت ادمین جدید
+============================================ */
 
-  .delete-admin-info {
-    flex-wrap: wrap;
-  }
-
-  .delete-admin-access {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-
-
-/* دکمه ثبت ادمین جدید */
 .add-admin-btn {
   display: inline-flex;
   align-items: center;
@@ -1044,6 +1023,7 @@
   color: #a5b4fc;
   border: 1px solid rgba(79, 70, 229, 0.5);
   padding: 8px 14px;
+  min-height: 40px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1061,4 +1041,244 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
   text-decoration: none;
+}
+
+/* ============================================
+   ریسپانسیو — تبلت (768px)
+============================================ */
+
+@media (max-width: 768px) {
+  .request-main-row {
+    gap: 10px;
+  }
+
+  .admin-request-access {
+    padding: 6px 8px;
+  }
+
+  .access-option {
+    font-size: 0.8rem;
+  }
+
+  .request-section .admin-requests-list {
+    max-height: 420px;        /* فضای بیشتر در تبلت */
+  }
+}
+
+/* ============================================
+   ریسپانسیو — موبایل (700px)
+============================================ */
+
+@media (max-width: 700px) {
+  .request-main-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .request-main-row .admin-request-actions {
+    width: 100%;
+  }
+
+  .request-main-row .admin-request-actions button {
+    flex: 1;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .panel-header .search-input {
+    max-width: 100%;
+  }
+
+  .admin-request-access {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  /* اسکرول‌بار نامرئی در موبایل */
+  .request-section .admin-requests-list::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  /* حذف hover transform در موبایل */
+  .btn-approve:hover,
+  .btn-reject:hover,
+  .btn-edit-access:hover,
+  .btn-recheck:hover,
+  .btn-delete:hover,
+  .back-btn:hover,
+  .add-admin-btn:hover,
+  .btn-delete-confirm:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .edit-access-radios {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .edit-access-card {
+    padding: 10px 12px;
+    min-height: 52px;
+  }
+
+  .edit-access-icon {
+    font-size: 1.3rem;
+  }
+
+  .edit-access-card small {
+    font-size: 0.7rem;
+  }
+}
+
+/* ============================================
+   ریسپانسیو — موبایل کوچک (500px)
+============================================ */
+
+@media (max-width: 500px) {
+  .edit-access-radios {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-person-avatar,
+  .delete-admin-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .delete-admin-info {
+    flex-wrap: wrap;
+  }
+
+  .delete-admin-access {
+    width: 100%;
+    text-align: center;
+  }
+
+  .edit-modal,
+  .delete-admin-modal {
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 24px);
+  }
+
+  /* کم کردن پدینگ مودال در موبایل کوچک */
+  .edit-modal .modal-tabs {
+    padding: 6px 12px 0;
+  }
+
+  .edit-modal .modal-tabs button {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .edit-person-info,
+  .delete-admin-info {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .edit-notice,
+  .delete-warning-box {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .edit-notice-icon,
+  .delete-warning-icon {
+    font-size: 1.4rem;
+  }
+
+  .request-section-title {
+    font-size: 0.95rem;
+    gap: 8px;
+  }
+
+  .request-section-count {
+    min-width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+  }
+
+  .admin-request-meta {
+    font-size: 0.78rem;
+    gap: 6px 10px;
+  }
+}
+
+/* ============================================
+   ریسپانسیو — موبایل خیلی کوچک (380px)
+============================================ */
+
+@media (max-width: 380px) {
+  .admin-request-item {
+    padding: 10px 12px;
+  }
+
+  .admin-request-info strong {
+    font-size: 0.9rem;
+  }
+
+  .admin-request-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-request-actions button {
+    width: 100%;
+  }
+
+  .admin-request-access {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .access-option {
+    justify-content: flex-start;
+    padding: 4px 0;
+  }
+
+  .edit-modal .modal-tabs button {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .edit-access-card {
+    padding: 10px;
+  }
+
+  .edit-access-card strong {
+    font-size: 0.85rem;
+  }
+
+  .edit-access-card small {
+    font-size: 0.68rem;
+  }
+}
+
+/* ============================================
+   تنظیمات کلی موبایل (اختیاری)
+============================================ */
+
+@media (max-width: 700px) {
+  /* جلوگیری از zoom خودکار iOS در فیلدهای ورودی */
+  input[type="text"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  .search-input,
+  .edit-password-input {
+    font-size: 16px !important;
+  }
+
+  /* بهبود اسکرول افقی در نوار تب‌ها */
+  .edit-modal .modal-tabs {
+    -webkit-overflow-scrolling: touch;
+  }
 }
