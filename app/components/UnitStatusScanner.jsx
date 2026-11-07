@@ -4,11 +4,14 @@ import { useState, useMemo } from "react";
 
 import "../css/blocksummery.css";
 import Qrscanner from "./Qrscanner";
+import ImageMessageModal from "./ImageMessageModal";
 
 import {
   getUnitsSummaryByBuilding,
   getBuildingsWithUnitsMeta,
 } from "../Js/actions";
+
+import { getUnitImageAction } from "../Js/imageActions";
 
 const DEFAULT_BUILDINGS = {
   A1: 40,
@@ -58,6 +61,12 @@ export default function UnitStatusScanner({
 
   // === state باز/بسته بودن بلوک‌ها ===
   const [expandedBuildings, setExpandedBuildings] = useState({});
+
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [unitImage, setUnitImage] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [unitArea, setUnitArea] = useState(null);
 
   async function loadSummary() {
     setLoadingSummary(true);
@@ -216,6 +225,30 @@ export default function UnitStatusScanner({
       floorGroups[floor].push(u.code);
     });
 
+    async function handleUnitClick(code) {
+      setSelectedUnit(code);
+      setUnitImage(null);
+      setUnitArea(null);
+      setImageError("");
+      setImageLoading(true);
+
+      try {
+        const result = await getUnitImageAction(code);
+
+        if (!result.success) {
+          setImageError(result.message);
+          return;
+        }
+
+        setUnitImage(result.imageUrl);
+        setUnitArea(result.area);
+      } catch (error) {
+        setImageError("خطا در دریافت تصویر واحد.");
+      } finally {
+        setImageLoading(false);
+      }
+    }
+
     return (
       <div className={`part-column ${partClass}`}>
         <div className="part-title">
@@ -233,8 +266,18 @@ export default function UnitStatusScanner({
                     <div
                       key={code}
                       className={`unit ${assignments[code] ? "taken" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleUnitClick(code)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleUnitClick(code);
+                        }
+                      }}
                     >
                       <strong>{code}</strong>
+
                       <small>
                         {assignments[code]
                           ? assignments[code].name || "انتخاب شده"
@@ -476,6 +519,27 @@ export default function UnitStatusScanner({
           </div>
         )}
       </div>
+
+      {selectedUnit && (
+        <ImageMessageModal
+          open={true}
+          onClose={() => {
+            setSelectedUnit(null);
+            setUnitImage(null);
+            setUnitArea(null);
+            setImageError("");
+          }}
+          imageSrc={unitImage}
+          imageAlt={`تصویر واحد ${selectedUnit}`}
+          message={
+            unitArea
+              ? `واحد ${selectedUnit} | متراژ: ${unitArea} متر مربع`
+              : `تصویر موقعیت واحد ${selectedUnit}`
+          }
+          loading={imageLoading}
+          error={imageError}
+        />
+      )}
     </div>
   );
 }
