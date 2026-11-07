@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import "../css/ImageMessageModal.css";
+import "../css/imageMessageModal.css";
 
 export default function ImageMessageModal({
   imageSrc = "/images/project-message.jpg",
